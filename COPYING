@@ -1,52 +1,4 @@
-# parasail-python: Python Bindings for the Parasail C Library
-
-Author: Jeff Daily (jeff.daily@pnnl.gov)
-
-## Table of Contents
-
-  * [Installation](#installation)
-  * [Citing parasail](#citing-parasail)
-  * [License: Battelle BSD\-style](#license-battelle-bsd-style)
-
-This package contains Python bindings for [parasail](https://github.com/jeffdaily/parasail). Parasail is a SIMD C (C99) library containing implementations of the Smith-Waterman (local), Needleman-Wunsch (global), and semi-global pairwise sequence alignment algorithms.  
-
-## Installation
-
-[back to top]
-
-Once you have installed parasail into --prefix=$PREFIX, you can also compile the Python bindings.  Don't forget to add $PREFIX/lib to your LD_LIBRARY_PATH, if needed.  The Python bindings are in the <parasail>/bindings/python directory.  To build, run:
-
-```
-PARASAIL_PREFIX=$PREFIX python setup.py build
-```
-
-This will correctly setup the necessary CPPFLAGS, LDFLAGS, and LIBS variables during the build.  Because the parasail.h header uses C99 keywords, e.g., restrict, the setup.py process will test your C compiler for the correct use of restrict, automatically.
-
-The Python interface only includes bindings for the dispatching functions, not the low-level instruction set-specific function calls.  The Python interface also includes wrappers for the various PAM and BLOSUM matrices included in the distribution.
-
-Example:
-
-```python
-import parasail
-result = parasail.sw_scan_16("asdf", "asdf", -11, -1, parasail.blosum62)
-result = parasail.sw_stats_striped_8("asdf", "asdf", -11, -1, parasail.pam100)
-```
-
-## Citing parasail
-
-[back to top]
-
-If needed, please cite the following paper.
-
-Daily, Jeff. (2016). Parasail: SIMD C library for global, semi-global,
-and local pairwise sequence alignments. *BMC Bioinformatics*, 17(1), 1-11.
-doi:10.1186/s12859-016-0930-z
-
-http://dx.doi.org/10.1186/s12859-016-0930-z
-
-## License: Battelle BSD-style
-
-[back to top]
+Pairwise Sequence Alignment Library (parasail)
 
 Copyright (c) 2015, Battelle Memorial Institute
 
@@ -60,16 +12,16 @@ Copyright (c) 2015, Battelle Memorial Institute
     the following conditions:
 
     - Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimers.
+      notice, this list of conditions and the following disclaimers. 
 
     - Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in
       the documentation and/or other materials provided with the
-      distribution.
+      distribution. 
 
     - Other than as used herein, neither the name Battelle Memorial
       Institute or Battelle may be used in any form whatsoever without
-      the express written consent of Battelle.
+      the express written consent of Battelle.  
 
     - Redistributions of the software in any form, and publications
       based on work performed using the software should include the
@@ -92,4 +44,3 @@ Copyright (c) 2015, Battelle Memorial Institute
     OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-[back to top]: #parasail-pairwise-sequence-alignment-library
