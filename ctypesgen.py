@@ -4,16 +4,15 @@
 
 print """
 from ctypes import *
-import sys
+import platform
 
 import numpy
 
 _libname = "libparasail.so"
-
-if sys.platform == 'darwin':
+if platform.system() == 'Darwin':
     _libname = "libparasail.dylib"
-elif sys.platform == 'Windows':
-    _libname = "libparasail"
+elif platform.system() == 'Windows':
+    _libname = "parasail"
 
 _lib = CDLL(_libname)
 
@@ -53,6 +52,9 @@ class Result:
     @property
     def score(self):
         return self.pointer[0].score
+    @property
+    def saturated(self):
+        return self.pointer[0].saturated != 0
 
 class matrix_t(Structure):
     _fields_ = [

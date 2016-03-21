@@ -48,6 +48,9 @@ class Result:
     @property
     def score(self):
         return self.pointer[0].score
+    @property
+    def saturated(self):
+        return self.pointer[0].saturated != 0
 
 class matrix_t(Structure):
     _fields_ = [
