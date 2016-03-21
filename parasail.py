@@ -1,15 +1,14 @@
 
 from ctypes import *
-import sys
+import platform
 
 import numpy
 
 _libname = "libparasail.so"
-
-if sys.platform == 'darwin':
+if platform.system() == 'Darwin':
     _libname = "libparasail.dylib"
-elif sys.platform == 'Windows':
-    _libname = "libparasail"
+elif platform.system() == 'Windows':
+    _libname = "parasail"
 
 _lib = CDLL(_libname)
 
