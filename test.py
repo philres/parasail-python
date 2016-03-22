@@ -92,13 +92,8 @@ print parasail.blosum62.name
 print parasail.blosum62.size
 print parasail.blosum62.matrix
 
-#profile = parasail.Profile.create_8("asdf", parasail.blosum62)
-#print profile
-#print profile.s1
-#print profile.matrix
-
-profile = parasail.Profile("asdf", parasail.blosum62, 8)
-profile = parasail.Profile("asdf", parasail.blosum62, 8)
+profile = parasail.profile_create_8("asdf", parasail.blosum62)
+profile = parasail.profile_create_8("asdf", parasail.blosum62)
 print profile
 print profile.s1
 print profile.matrix
@@ -108,22 +103,18 @@ print result
 print result.saturated
 print result.score
 
-try:
-    profile = parasail.Profile("asdf", parasail.blosum62, "sa")
-except ValueError, e:
-    print "caught ValueError as expected:", e
-
-profile = parasail.Profile("asdf", parasail.blosum62, "sat")
+profile = parasail.profile_create_sat("asdf", parasail.blosum62)
 print profile
 print profile.s1
 print profile.matrix
+print dir(profile.matrix)
+print profile.matrix.min
+print profile.matrix.max
+print profile.matrix.size
 
 result = parasail.sw_striped_profile_sat(profile,"asdf",10,1)
 print result
 print result.saturated
 print result.score
+print type(result.score)
 
-try:
-    profile = parasail.Profile("asdf", parasail.blosum62, 1234)
-except ValueError, e:
-    print "caught ValueError as expected:", e
