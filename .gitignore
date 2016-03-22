@@ -1,2 +1,6 @@
 build/
-parasail.c
+dist/
+*.pyc
+*.so
+*.dylib
+*.dll

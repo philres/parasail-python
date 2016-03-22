@@ -15,14 +15,27 @@ import sys
 
 import numpy
 
+__version__ = "1.0.0"
+__title__ = "parasail"
+__description__ = "pairwise sequence alignment library"
+__uri__ = "https://github.com/jeffdaily/parasail-python"
+__author__ = "Jeff Daily"
+__email__ = "jeff.daily@pnnl.gov"
+__license__ = "BSD"
+__copyright__ = "Copyright (c) 2016 Jeff Daily"
+
 _libname = "libparasail.so"
 if platform.system() == 'Darwin':
     _libname = "libparasail.dylib"
 elif platform.system() == 'Windows':
-    _libname = "parasail"
+    _libname = "parasail.dll"
 _libpath = os.path.join(os.path.dirname(__file__), _libname)
 
-_lib = ctypes.CDLL(_libpath)
+_lib = None
+if os.path.exists(_libpath):
+    _lib = ctypes.CDLL(_libpath)
+else:
+    _lib = ctypes.CDLL(_libname)
 
 def _make_nd_array(c_pointer, shape, dtype=numpy.intc, order='C', own_data=True):
     arr_size = numpy.prod(shape[:]) * numpy.dtype(dtype).itemsize 

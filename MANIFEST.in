@@ -1,0 +1,1 @@
+include COPYING ctypesgen.py DISCLAIMER README.md setup.cfg test.py
