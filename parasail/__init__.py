@@ -297,6 +297,15 @@ def profile_create_stats_64(s1, matrix):
 def profile_create_stats_sat(s1, matrix):
     return Profile(_lib.parasail_profile_create_stats_sat(s1, len(s1), matrix), matrix)
 
+def can_use_avx2():
+    return bool(_lib.parasail_can_use_avx2())
+
+def can_use_sse41():
+    return bool(_lib.parasail_can_use_sse41())
+
+def can_use_sse2():
+    return bool(_lib.parasail_can_use_sse2())
+
 # begin non-alignment functions defined here
 
 # parasail_profile_free is not exposed.
