@@ -72,7 +72,7 @@ URI = find_meta("uri")
 distclass = Distribution
 package_data = {}
 
-if "--bdist_wheel" in sys.argv:
+if "bdist_wheel" in sys.argv:
     class BinaryDistribution(Distribution):
         def is_pure(self):
             return False
