@@ -322,10 +322,13 @@ _lib.parasail_version.argtypes = [c_int_p, c_int_p, c_int_p]
 _lib.parasail_version.restype = None
 
 def version():
-    major = c_int()
-    minor = c_int()
-    patch = c_int()
-    _lib.parasail_version(byref(major), byref(minor), byref(patch))
+    major = ctypes.c_int()
+    minor = ctypes.c_int()
+    patch = ctypes.c_int()
+    _lib.parasail_version(
+            ctypes.byref(major),
+            ctypes.byref(minor),
+            ctypes.byref(patch))
     return major.value, minor.value, patch.value
 
 _lib.parasail_time.argtypes = []
