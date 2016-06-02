@@ -37,6 +37,14 @@ if os.path.exists(_libpath):
 else:
     _lib = ctypes.CDLL(_libname)
 
+if sys.version_info.major < 3:
+    def b(x):
+        return x
+else:
+    import codecs
+    def b(x):
+        return codecs.latin_1_encode(x)[0]
+
 def _make_nd_array(c_pointer, shape, dtype=numpy.intc, order='C', own_data=True):
     arr_size = numpy.prod(shape[:]) * numpy.dtype(dtype).itemsize 
     if sys.version_info.major >= 3:
@@ -277,34 +285,34 @@ _lib.parasail_profile_create_stats_sat.argtypes = _profile_create_argtypes
 _lib.parasail_profile_create_stats_sat.restype = c_profile_p
 
 def profile_create_8(s1, matrix):
-    return Profile(_lib.parasail_profile_create_8(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_8(b(s1), len(s1), matrix), matrix)
 
 def profile_create_16(s1, matrix):
-    return Profile(_lib.parasail_profile_create_16(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_16(b(s1), len(s1), matrix), matrix)
 
 def profile_create_32(s1, matrix):
-    return Profile(_lib.parasail_profile_create_32(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_32(b(s1), len(s1), matrix), matrix)
 
 def profile_create_64(s1, matrix):
-    return Profile(_lib.parasail_profile_create_64(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_64(b(s1), len(s1), matrix), matrix)
 
 def profile_create_sat(s1, matrix):
-    return Profile(_lib.parasail_profile_create_sat(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_sat(b(s1), len(s1), matrix), matrix)
 
 def profile_create_stats_8(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_8(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_stats_8(b(s1), len(s1), matrix), matrix)
 
 def profile_create_stats_16(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_16(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_stats_16(b(s1), len(s1), matrix), matrix)
 
 def profile_create_stats_32(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_32(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_stats_32(b(s1), len(s1), matrix), matrix)
 
 def profile_create_stats_64(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_64(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_stats_64(b(s1), len(s1), matrix), matrix)
 
 def profile_create_stats_sat(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_sat(s1, len(s1), matrix), matrix)
+    return Profile(_lib.parasail_profile_create_stats_sat(b(s1), len(s1), matrix), matrix)
 
 def can_use_avx2():
     return bool(_lib.parasail_can_use_avx2())
@@ -350,77 +358,77 @@ _lib.parasail_matrix_lookup
 _lib.parasail_matrix_lookup.argtypes = [ctypes.c_char_p]
 _lib.parasail_matrix_lookup.restype = c_matrix_p
 
-blosum100 = Matrix(_lib.parasail_matrix_lookup(b"blosum100"))
-blosum30 = Matrix(_lib.parasail_matrix_lookup(b"blosum30"))
-blosum35 = Matrix(_lib.parasail_matrix_lookup(b"blosum35"))
-blosum40 = Matrix(_lib.parasail_matrix_lookup(b"blosum40"))
-blosum45 = Matrix(_lib.parasail_matrix_lookup(b"blosum45"))
-blosum50 = Matrix(_lib.parasail_matrix_lookup(b"blosum50"))
-blosum55 = Matrix(_lib.parasail_matrix_lookup(b"blosum55"))
-blosum60 = Matrix(_lib.parasail_matrix_lookup(b"blosum60"))
-blosum62 = Matrix(_lib.parasail_matrix_lookup(b"blosum62"))
-blosum65 = Matrix(_lib.parasail_matrix_lookup(b"blosum65"))
-blosum70 = Matrix(_lib.parasail_matrix_lookup(b"blosum70"))
-blosum75 = Matrix(_lib.parasail_matrix_lookup(b"blosum75"))
-blosum80 = Matrix(_lib.parasail_matrix_lookup(b"blosum80"))
-blosum85 = Matrix(_lib.parasail_matrix_lookup(b"blosum85"))
-blosum90 = Matrix(_lib.parasail_matrix_lookup(b"blosum90"))
-pam10 = Matrix(_lib.parasail_matrix_lookup(b"pam10"))
-pam100 = Matrix(_lib.parasail_matrix_lookup(b"pam100"))
-pam110 = Matrix(_lib.parasail_matrix_lookup(b"pam110"))
-pam120 = Matrix(_lib.parasail_matrix_lookup(b"pam120"))
-pam130 = Matrix(_lib.parasail_matrix_lookup(b"pam130"))
-pam140 = Matrix(_lib.parasail_matrix_lookup(b"pam140"))
-pam150 = Matrix(_lib.parasail_matrix_lookup(b"pam150"))
-pam160 = Matrix(_lib.parasail_matrix_lookup(b"pam160"))
-pam170 = Matrix(_lib.parasail_matrix_lookup(b"pam170"))
-pam180 = Matrix(_lib.parasail_matrix_lookup(b"pam180"))
-pam190 = Matrix(_lib.parasail_matrix_lookup(b"pam190"))
-pam20 = Matrix(_lib.parasail_matrix_lookup(b"pam20"))
-pam200 = Matrix(_lib.parasail_matrix_lookup(b"pam200"))
-pam210 = Matrix(_lib.parasail_matrix_lookup(b"pam210"))
-pam220 = Matrix(_lib.parasail_matrix_lookup(b"pam220"))
-pam230 = Matrix(_lib.parasail_matrix_lookup(b"pam230"))
-pam240 = Matrix(_lib.parasail_matrix_lookup(b"pam240"))
-pam250 = Matrix(_lib.parasail_matrix_lookup(b"pam250"))
-pam260 = Matrix(_lib.parasail_matrix_lookup(b"pam260"))
-pam270 = Matrix(_lib.parasail_matrix_lookup(b"pam270"))
-pam280 = Matrix(_lib.parasail_matrix_lookup(b"pam280"))
-pam290 = Matrix(_lib.parasail_matrix_lookup(b"pam290"))
-pam30 = Matrix(_lib.parasail_matrix_lookup(b"pam30"))
-pam300 = Matrix(_lib.parasail_matrix_lookup(b"pam300"))
-pam310 = Matrix(_lib.parasail_matrix_lookup(b"pam310"))
-pam320 = Matrix(_lib.parasail_matrix_lookup(b"pam320"))
-pam330 = Matrix(_lib.parasail_matrix_lookup(b"pam330"))
-pam340 = Matrix(_lib.parasail_matrix_lookup(b"pam340"))
-pam350 = Matrix(_lib.parasail_matrix_lookup(b"pam350"))
-pam360 = Matrix(_lib.parasail_matrix_lookup(b"pam360"))
-pam370 = Matrix(_lib.parasail_matrix_lookup(b"pam370"))
-pam380 = Matrix(_lib.parasail_matrix_lookup(b"pam380"))
-pam390 = Matrix(_lib.parasail_matrix_lookup(b"pam390"))
-pam40 = Matrix(_lib.parasail_matrix_lookup(b"pam40"))
-pam400 = Matrix(_lib.parasail_matrix_lookup(b"pam400"))
-pam410 = Matrix(_lib.parasail_matrix_lookup(b"pam410"))
-pam420 = Matrix(_lib.parasail_matrix_lookup(b"pam420"))
-pam430 = Matrix(_lib.parasail_matrix_lookup(b"pam430"))
-pam440 = Matrix(_lib.parasail_matrix_lookup(b"pam440"))
-pam450 = Matrix(_lib.parasail_matrix_lookup(b"pam450"))
-pam460 = Matrix(_lib.parasail_matrix_lookup(b"pam460"))
-pam470 = Matrix(_lib.parasail_matrix_lookup(b"pam470"))
-pam480 = Matrix(_lib.parasail_matrix_lookup(b"pam480"))
-pam490 = Matrix(_lib.parasail_matrix_lookup(b"pam490"))
-pam50 = Matrix(_lib.parasail_matrix_lookup(b"pam50"))
-pam500 = Matrix(_lib.parasail_matrix_lookup(b"pam500"))
-pam60 = Matrix(_lib.parasail_matrix_lookup(b"pam60"))
-pam70 = Matrix(_lib.parasail_matrix_lookup(b"pam70"))
-pam80 = Matrix(_lib.parasail_matrix_lookup(b"pam80"))
-pam90 = Matrix(_lib.parasail_matrix_lookup(b"pam90"))
+blosum100 = Matrix(_lib.parasail_matrix_lookup(b("blosum100")))
+blosum30 = Matrix(_lib.parasail_matrix_lookup(b("blosum30")))
+blosum35 = Matrix(_lib.parasail_matrix_lookup(b("blosum35")))
+blosum40 = Matrix(_lib.parasail_matrix_lookup(b("blosum40")))
+blosum45 = Matrix(_lib.parasail_matrix_lookup(b("blosum45")))
+blosum50 = Matrix(_lib.parasail_matrix_lookup(b("blosum50")))
+blosum55 = Matrix(_lib.parasail_matrix_lookup(b("blosum55")))
+blosum60 = Matrix(_lib.parasail_matrix_lookup(b("blosum60")))
+blosum62 = Matrix(_lib.parasail_matrix_lookup(b("blosum62")))
+blosum65 = Matrix(_lib.parasail_matrix_lookup(b("blosum65")))
+blosum70 = Matrix(_lib.parasail_matrix_lookup(b("blosum70")))
+blosum75 = Matrix(_lib.parasail_matrix_lookup(b("blosum75")))
+blosum80 = Matrix(_lib.parasail_matrix_lookup(b("blosum80")))
+blosum85 = Matrix(_lib.parasail_matrix_lookup(b("blosum85")))
+blosum90 = Matrix(_lib.parasail_matrix_lookup(b("blosum90")))
+pam10 = Matrix(_lib.parasail_matrix_lookup(b("pam10")))
+pam100 = Matrix(_lib.parasail_matrix_lookup(b("pam100")))
+pam110 = Matrix(_lib.parasail_matrix_lookup(b("pam110")))
+pam120 = Matrix(_lib.parasail_matrix_lookup(b("pam120")))
+pam130 = Matrix(_lib.parasail_matrix_lookup(b("pam130")))
+pam140 = Matrix(_lib.parasail_matrix_lookup(b("pam140")))
+pam150 = Matrix(_lib.parasail_matrix_lookup(b("pam150")))
+pam160 = Matrix(_lib.parasail_matrix_lookup(b("pam160")))
+pam170 = Matrix(_lib.parasail_matrix_lookup(b("pam170")))
+pam180 = Matrix(_lib.parasail_matrix_lookup(b("pam180")))
+pam190 = Matrix(_lib.parasail_matrix_lookup(b("pam190")))
+pam20 = Matrix(_lib.parasail_matrix_lookup(b("pam20")))
+pam200 = Matrix(_lib.parasail_matrix_lookup(b("pam200")))
+pam210 = Matrix(_lib.parasail_matrix_lookup(b("pam210")))
+pam220 = Matrix(_lib.parasail_matrix_lookup(b("pam220")))
+pam230 = Matrix(_lib.parasail_matrix_lookup(b("pam230")))
+pam240 = Matrix(_lib.parasail_matrix_lookup(b("pam240")))
+pam250 = Matrix(_lib.parasail_matrix_lookup(b("pam250")))
+pam260 = Matrix(_lib.parasail_matrix_lookup(b("pam260")))
+pam270 = Matrix(_lib.parasail_matrix_lookup(b("pam270")))
+pam280 = Matrix(_lib.parasail_matrix_lookup(b("pam280")))
+pam290 = Matrix(_lib.parasail_matrix_lookup(b("pam290")))
+pam30 = Matrix(_lib.parasail_matrix_lookup(b("pam30")))
+pam300 = Matrix(_lib.parasail_matrix_lookup(b("pam300")))
+pam310 = Matrix(_lib.parasail_matrix_lookup(b("pam310")))
+pam320 = Matrix(_lib.parasail_matrix_lookup(b("pam320")))
+pam330 = Matrix(_lib.parasail_matrix_lookup(b("pam330")))
+pam340 = Matrix(_lib.parasail_matrix_lookup(b("pam340")))
+pam350 = Matrix(_lib.parasail_matrix_lookup(b("pam350")))
+pam360 = Matrix(_lib.parasail_matrix_lookup(b("pam360")))
+pam370 = Matrix(_lib.parasail_matrix_lookup(b("pam370")))
+pam380 = Matrix(_lib.parasail_matrix_lookup(b("pam380")))
+pam390 = Matrix(_lib.parasail_matrix_lookup(b("pam390")))
+pam40 = Matrix(_lib.parasail_matrix_lookup(b("pam40")))
+pam400 = Matrix(_lib.parasail_matrix_lookup(b("pam400")))
+pam410 = Matrix(_lib.parasail_matrix_lookup(b("pam410")))
+pam420 = Matrix(_lib.parasail_matrix_lookup(b("pam420")))
+pam430 = Matrix(_lib.parasail_matrix_lookup(b("pam430")))
+pam440 = Matrix(_lib.parasail_matrix_lookup(b("pam440")))
+pam450 = Matrix(_lib.parasail_matrix_lookup(b("pam450")))
+pam460 = Matrix(_lib.parasail_matrix_lookup(b("pam460")))
+pam470 = Matrix(_lib.parasail_matrix_lookup(b("pam470")))
+pam480 = Matrix(_lib.parasail_matrix_lookup(b("pam480")))
+pam490 = Matrix(_lib.parasail_matrix_lookup(b("pam490")))
+pam50 = Matrix(_lib.parasail_matrix_lookup(b("pam50")))
+pam500 = Matrix(_lib.parasail_matrix_lookup(b("pam500")))
+pam60 = Matrix(_lib.parasail_matrix_lookup(b("pam60")))
+pam70 = Matrix(_lib.parasail_matrix_lookup(b("pam70")))
+pam80 = Matrix(_lib.parasail_matrix_lookup(b("pam80")))
+pam90 = Matrix(_lib.parasail_matrix_lookup(b("pam90")))
 
 _lib.parasail_matrix_create.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
 _lib.parasail_matrix_create.restype = c_matrix_p
 
 def matrix_create(alphabet, match, mismatch):
-    return Matrix(_lib.parasail_matrix_create(alphabet, match, mismatch))
+    return Matrix(_lib.parasail_matrix_create(b(alphabet), match, mismatch))
 
 # parasail_matrix_free is not exposed.
 # Memory is managed by the Matrix class.
@@ -444,7 +452,7 @@ for a in alg:
             myprint("_lib.parasail_"+a+s+t+".restype = c_result_p")
             myprint("def "+a+s+t+"(s1, s2, open, extend, matrix):")
             myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+"(")
-            myprint(" "*8+"s1, len(s1), s2, len(s2), open, extend, matrix),")
+            myprint(" "*8+"b(s1), len(s1), b(s2), len(s2), open, extend, matrix),")
             myprint(" "*8+"len(s1), len(s2))")
 
 ## serial scan reference implementations (3x2x3 = 18 impl)
@@ -459,7 +467,7 @@ for a in alg:
             myprint("_lib.parasail_"+a+s+t+"_scan.restype = c_result_p")
             myprint("def "+a+s+t+"_scan(s1, s2, open, extend, matrix):")
             myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+"_scan(")
-            myprint(" "*8+"s1, len(s1), s2, len(s2), open, extend, matrix),")
+            myprint(" "*8+"b(s1), len(s1), b(s2), len(s2), open, extend, matrix),")
             myprint(" "*8+"len(s1), len(s2))")
 
 # vectorized implementations (3x2x3x3x4 = 216 impl)
@@ -478,7 +486,7 @@ for a in alg:
                     myprint("_lib.parasail_"+a+s+t+p+w+".restype = c_result_p")
                     myprint("def "+a+s+t+p+w+"(s1, s2, open, extend, matrix):")
                     myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+p+w+"(")
-                    myprint(" "*8+"s1, len(s1), s2, len(s2), open, extend, matrix),")
+                    myprint(" "*8+"b(s1), len(s1), b(s2), len(s2), open, extend, matrix),")
                     myprint(" "*8+"len(s1), len(s2))")
 
 myprint("""
@@ -501,6 +509,6 @@ for a in alg:
                     myprint("_lib.parasail_"+a+s+t+p+w+".restype = c_result_p")
                     myprint("def "+a+s+t+p+w+"(profile, s2, open, extend):")
                     myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+p+w+"(")
-                    myprint(" "*8+"profile, s2, len(s2), open, extend),")
+                    myprint(" "*8+"profile, b(s2), len(s2), open, extend),")
                     myprint(" "*8+"profile.s1Len, len(s2))")
 
