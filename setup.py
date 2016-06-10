@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import urllib
@@ -107,6 +108,7 @@ def cpu_count():
 
 # unzipping parasail C library zip file does not preserve executable permissions
 def fix_permissions(start):
+    execmode = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
     filenames = [
         "version.sh",
         "func_group_rowcols.py",
@@ -134,7 +136,9 @@ def fix_permissions(start):
     for root, dirs, files in os.walk(start, topdown=False):
         for name in files:
             if name in filenames:
-                os.chmod(os.path.join(root,name), 0777)
+                fullpath = os.path.join(root,name)
+                st = os.stat(fullpath)
+                os.chmod(fullpath, st.st_mode | execmode)
 
 # Download, unzip, configure, and make parasail C library from github.
 # Attempt to skip steps that may have already completed.
