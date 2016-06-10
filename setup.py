@@ -9,7 +9,9 @@ import sys
 import urllib
 import zipfile
 
-from setuptools import setup, Distribution
+from distutils.util import get_platform
+from setuptools import setup
+from wheel.bdist_wheel import bdist_wheel as bdist_wheel_
 
 
 ###############################################################################
@@ -73,10 +75,6 @@ def find_meta(meta):
 
 
 URI = find_meta("uri")
-
-class BinaryDistribution(Distribution):
-    def is_pure(self):
-        return False
 
 def get_libname():
     libname = "libparasail.so"
@@ -171,6 +169,9 @@ def build_parasail(libname):
 
     if find_file('config.status') is None:
         print("configuring parasail in directory {}".format(root))
+        # force universal/fat build in OSX via CFLAGS env var
+        if platform.system() == "Darwin":
+            os.environ['CFLAGS']="-arch x86_64 -arch i386"
         retcode = subprocess.Popen([
             './configure',
             '--enable-shared',
@@ -197,17 +198,20 @@ def build_parasail(libname):
     print("copying {} to {}".format(src,dst))
     shutil.copy(src,dst)
 
-distclass = Distribution
-package_data = {}
+class bdist_wheel(bdist_wheel_):
+    def run(self):
+        libname = get_libname()
+        if not os.path.exists(os.path.join("parasail", libname)):
+            build_parasail(libname)
+        if not os.path.exists(os.path.join("parasail", libname)):
+            raise RuntimeError("Unable to find shared library {lib}.".format(lib=libname))
+        bdist_wheel_.run(self)
 
-if "bdist_wheel" in sys.argv:
-    distclass = BinaryDistribution
-    libname = get_libname()
-    package_data = {"parasail": [libname]}
-    if not os.path.exists(os.path.join("parasail", libname)):
-        build_parasail(libname)
-    if not os.path.exists(os.path.join("parasail", libname)):
-        raise RuntimeError("Unable to find shared library {lib}.".format(lib=libname))
+    def finalize_options(self):
+        bdist_wheel_.finalize_options(self)
+        self.universal = True
+        self.plat_name_supplied = True
+        self.plat_name = get_platform()
 
 if __name__ == "__main__":
     setup(
@@ -222,8 +226,8 @@ if __name__ == "__main__":
         maintainer_email=find_meta("email"),
         keywords=KEYWORDS,
         packages=PACKAGES,
-        package_data=package_data,
-        distclass=distclass,
+        package_data={"parasail": [get_libname()]},
+        cmdclass={'bdist_wheel': bdist_wheel},
         zip_safe=False,
         classifiers=CLASSIFIERS,
         install_requires=INSTALL_REQUIRES,
