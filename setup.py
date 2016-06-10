@@ -2,7 +2,11 @@ import codecs
 import os
 import platform
 import re
+import shutil
+import subprocess
 import sys
+import urllib
+import zipfile
 
 from setuptools import setup, Distribution
 
@@ -69,22 +73,135 @@ def find_meta(meta):
 
 URI = find_meta("uri")
 
+class BinaryDistribution(Distribution):
+    def is_pure(self):
+        return False
+
+def get_libname():
+    libname = "libparasail.so"
+    if platform.system() == "Darwin":
+        libname = "libparasail.dylib"
+    elif platform.system() == "Windows":
+        libname = "parasail.dll"
+    return libname
+
+def unzip(archive, destdir):
+    thefile=zipfile.ZipFile(archive)
+    thefile.extractall(destdir)
+    thefile.close()
+
+def find_file(filename, start="."):
+    for root, dirs, files in os.walk(start, topdown=False):
+        for name in files:
+            if name == filename:
+                return root
+    return None
+
+# attempt to run parallel make with at most 8 workers
+def cpu_count():
+    try:
+        import multiprocessing
+        return min(8, multiprocessing.cpu_count())
+    except:
+        return 1
+
+# unzipping parasail C library zip file does not preserve executable permissions
+def fix_permissions(start):
+    filenames = [
+        "version.sh",
+        "func_group_rowcols.py",
+        "codegen.py",
+        "satcheck.py",
+        "func_group_tables.py",
+        "tester.py",
+        "diff_all.sh",
+        "names.py",
+        "dispatcher.py",
+        "isastubs.py",
+        "funcs.py",
+        "makedef.py",
+        "gap_tester.py",
+        "func_groups.py",
+        "configure",
+        "install-sh",
+        "config.sub",
+        "test-driver",
+        "config.guess",
+        "compile",
+        "missing",
+        "depcomp",
+        ]
+    for root, dirs, files in os.walk(start, topdown=False):
+        for name in files:
+            if name in filenames:
+                os.chmod(os.path.join(root,name), 0777)
+
+# Download, unzip, configure, and make parasail C library from github.
+# Attempt to skip steps that may have already completed.
+def build_parasail(libname):
+    archive = 'parasail-master.zip'
+    destdir = 'parasail-master'
+
+    if not os.path.exists(archive):
+        print("Downloading latest parasail master")
+        theurl = 'https://github.com/jeffdaily/parasail/archive/master.zip'
+        name,hdrs = urllib.urlretrieve(theurl, archive)
+    else:
+        print("Archive '{}' already downloaded".format(archive))
+
+    if not os.path.exists(destdir):
+        print("Unzipping parasail master archive")
+        unzip(archive, destdir)
+    else:
+        print("Archive '{}' already unzipped to {}".format(archive,destdir))
+
+    root = find_file('configure')
+    if root is None:
+        raise RuntimeError("Unable to find configure script")
+
+    if not os.access(os.path.join(root,'configure'), os.X_OK):
+        print("fixing executable bits after unzipping")
+        fix_permissions(root)
+    else:
+        print("parasail archive executable permissions ok")
+
+    if find_file('config.status') is None:
+        print("configuring parasail in directory {}".format(root))
+        retcode = subprocess.Popen([
+            './configure',
+            '--enable-shared',
+            '--disable-static'
+            ], cwd=root).wait()
+        if 0 != retcode:
+            raise RuntimeError("configure failed")
+    else:
+        print("parasail already configured in directory {}".format(root))
+
+    if find_file(libname) is None:
+        print("making parasail")
+        retcode = subprocess.Popen([
+            'make',
+            '-j',
+            str(cpu_count())
+            ], cwd=root).wait()
+        if 0 != retcode:
+            raise RuntimeError("make failed")
+    else:
+        print("parasail library '{}' already made".format(libname))
+    src = os.path.join(root, '.libs', libname)
+    dst = 'parasail'
+    print("copying {} to {}".format(src,dst))
+    shutil.copy(src,dst)
+
 distclass = Distribution
 package_data = {}
 
 if "bdist_wheel" in sys.argv:
-    class BinaryDistribution(Distribution):
-        def is_pure(self):
-            return False
     distclass = BinaryDistribution
-
-    libname = "libparasail.so"
-    if platform.system() == "Darwin":
-        libname = "libparasail.dylib"
-    if platform.system() == "Windows":
-        libname = "parasail.dll"
+    libname = get_libname()
     package_data = {"parasail": [libname]}
-
+    if not os.path.exists(os.path.join("parasail", libname)):
+        build_parasail(libname)
     if not os.path.exists(os.path.join("parasail", libname)):
         raise RuntimeError("Unable to find shared library {lib}.".format(lib=libname))
 
