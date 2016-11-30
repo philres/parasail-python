@@ -6,7 +6,10 @@ import shutil
 import stat
 import subprocess
 import sys
-import urllib
+try:
+    from urllib import urlretrieve
+except ImportError:
+    from urllib.request import urlretrieve
 import zipfile
 
 from distutils.util import get_platform
@@ -147,7 +150,7 @@ def build_parasail(libname):
     if not os.path.exists(archive):
         print("Downloading latest parasail master")
         theurl = 'https://github.com/jeffdaily/parasail/archive/master.zip'
-        name,hdrs = urllib.urlretrieve(theurl, archive)
+        name,hdrs = urlretrieve(theurl, archive)
     else:
         print("Archive '{}' already downloaded".format(archive))
 
