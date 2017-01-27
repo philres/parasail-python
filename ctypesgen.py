@@ -55,6 +55,7 @@ def _make_nd_array(c_pointer, shape, dtype=numpy.intc, order='C', own_data=True)
     else:
         buf_from_mem = ctypes.pythonapi.PyBuffer_FromMemory
         buf_from_mem.restype = ctypes.py_object
+        buf_from_mem.argtypes = (ctypes.c_void_p, ctypes.c_ssize_t)
         buffer = buf_from_mem(c_pointer, arr_size)
     return numpy.ndarray(tuple(shape[:]), dtype, buffer, order=order)
 
@@ -177,13 +178,13 @@ class Result:
 
 class matrix_t(ctypes.Structure):
     _fields_ = [
-        ("name",      ctypes.c_char_p),
-        ("matrix",    c_int_p),
-        ("mapper",    c_int_p),
-        ("size",      ctypes.c_int),
-        ("max",       ctypes.c_int),
-        ("min",       ctypes.c_int),
-        ("need_free", ctypes.c_int)
+        ("name",        ctypes.c_char_p),
+        ("matrix",      c_int_p),
+        ("mapper",      c_int_p),
+        ("size",        ctypes.c_int),
+        ("max",         ctypes.c_int),
+        ("min",         ctypes.c_int),
+        ("user_matrix", c_int_p)
         ]
 
 c_matrix_p = ctypes.POINTER(matrix_t)
@@ -193,7 +194,7 @@ class Matrix:
         self.pointer = pointer
         self._as_parameter_ = pointer
     def __del__(self):
-        if self.pointer[0].need_free:
+        if self.pointer[0].user_matrix:
             _lib.parasail_matrix_free(self.pointer)
     @property
     def name(self):
@@ -212,6 +213,37 @@ class Matrix:
     @property
     def min(self):
         return self.pointer[0].min
+    def set_value(self, row, col, value):
+        _lib.parasail_matrix_set_value(self.pointer, row, col, value)
+    def copy(self):
+        return Matrix(_lib.parasail_matrix_copy(self.pointer))
+    def __setitem__(self, key, value):
+        if type(key) is list or type(key) is tuple:
+            if len(key) < 2:
+                raise IndexError('too few keys in setitem')
+            if len(key) > 2:
+                raise IndexError('too many keys in setitem')
+            if isinstance(key[0], slice) and isinstance(key[1], slice):
+                for r in range(key[0].start, key[0].stop, key[0].step or 1):
+                    for c in range(key[1].start, key[1].stop, key[1].step or 1):
+                        _lib.parasail_matrix_set_value(self.pointer, r, c, value)
+            elif isinstance(key[0], slice):
+                for r in range(key[0].start, key[0].stop, key[0].step or 1):
+                    _lib.parasail_matrix_set_value(self.pointer, r, key[1], value)
+
+            elif isinstance(key[1], slice):
+                for c in range(key[1].start, key[1].stop, key[1].step or 1):
+                    _lib.parasail_matrix_set_value(self.pointer, key[0], c, value)
+            else:
+                _lib.parasail_matrix_set_value(self.pointer, key[0], key[1], value)
+        elif isinstance(key, slice):
+            for r in range(key[0].start, key[0].stop, key[0].step or 1):
+                for c in range(self.size):
+                    _lib.parasail_matrix_set_value(self.pointer, r, c, value)
+        else:
+            # assume int, do what numpy does
+            for c in range(self.size):
+                _lib.parasail_matrix_set_value(self.pointer, key, c, value)
 
 class profile_data_t(ctypes.Structure):
     _fields_ = [
@@ -434,6 +466,12 @@ def matrix_create(alphabet, match, mismatch):
 # Memory is managed by the Matrix class.
 _lib.parasail_matrix_free.argtypes = [c_matrix_p]
 _lib.parasail_matrix_free.restype = None
+
+_lib.parasail_matrix_set_value.argtypes = [c_matrix_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.parasail_matrix_set_value.restype = None
+
+_lib.parasail_matrix_copy.argtypes = [c_matrix_p]
+_lib.parasail_matrix_copy.restype = c_matrix_p
 
 # begin generated names here
 
