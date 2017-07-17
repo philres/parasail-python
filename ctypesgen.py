@@ -40,10 +40,14 @@ else:
 if sys.version_info.major < 3:
     def b(x):
         return x
+    def isstr(s):
+        return isinstance(s, basestring)
 else:
     import codecs
     def b(x):
         return codecs.latin_1_encode(x)[0]
+    def isstr(s):
+        return isinstance(s, str)
 
 def _make_nd_array(c_pointer, shape, dtype=numpy.intc, order='C', own_data=True):
     arr_size = numpy.prod(shape[:]) * numpy.dtype(dtype).itemsize 
@@ -190,7 +194,23 @@ class matrix_t(ctypes.Structure):
 c_matrix_p = ctypes.POINTER(matrix_t)
 
 class Matrix:
-    def __init__(self, pointer):
+    def __init__(self, pointer_or_string):
+        pointer = None
+        if isstr(pointer_or_string):
+            pointer = _lib.parasail_matrix_lookup(b(pointer_or_string))
+            if not pointer:
+                # matrix_from_file calls exit if file doesn't exist
+                # so check now to avoid python exiting
+                if os.path.isfile(pointer_or_string):
+                    pointer = _lib.parasail_matrix_from_file(
+                            b(pointer_or_string))
+                else:
+                    raise ValueError("Cannot open matrix file `%s'"%
+                            pointer_or_string)
+                if not pointer:
+                    raise ValueError('specified matrix not found')
+        else:
+            pointer = pointer_or_string
         self.pointer = pointer
         self._as_parameter_ = pointer
     def __del__(self):
@@ -389,6 +409,10 @@ def time():
 _lib.parasail_matrix_lookup
 _lib.parasail_matrix_lookup.argtypes = [ctypes.c_char_p]
 _lib.parasail_matrix_lookup.restype = c_matrix_p
+
+_lib.parasail_matrix_from_file
+_lib.parasail_matrix_from_file.argtypes = [ctypes.c_char_p]
+_lib.parasail_matrix_from_file.restype = c_matrix_p
 
 blosum100 = Matrix(_lib.parasail_matrix_lookup(b("blosum100")))
 blosum30 = Matrix(_lib.parasail_matrix_lookup(b("blosum30")))
