@@ -479,6 +479,8 @@ pam60 = Matrix(_lib.parasail_matrix_lookup(b("pam60")))
 pam70 = Matrix(_lib.parasail_matrix_lookup(b("pam70")))
 pam80 = Matrix(_lib.parasail_matrix_lookup(b("pam80")))
 pam90 = Matrix(_lib.parasail_matrix_lookup(b("pam90")))
+dnafull = Matrix(_lib.parasail_matrix_lookup(b("dnafull")))
+nuc44 = Matrix(_lib.parasail_matrix_lookup(b("nuc44")))
 
 _lib.parasail_matrix_create.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
 _lib.parasail_matrix_create.restype = c_matrix_p
