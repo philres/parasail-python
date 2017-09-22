@@ -33,6 +33,7 @@ install:
 
   # We need wheel installed to build wheels
   - "python -m pip install wheel"
+  - "python -m pip install twine"
 
 # Disable AppVeyor's attempts to automatically build the code
 build: off
@@ -62,5 +63,5 @@ on_success:
   # with Unix line-endings causes the windows command interpreter to barf so
   # this is given as one-line to make this script less fragile when edited on
   # other OSes.
-  - if "%APPVEYOR_REPO_TAG%"=="true" ( %PYTHON%\\python.exe setup.py bdist_wheel upload ) else ( echo "Not deploying because not a tagged commit." )
+  - if "%APPVEYOR_REPO_TAG%"=="true" ( twine upload -s dist/* ) else ( echo "Not deploying because not a tagged commit." )
 
