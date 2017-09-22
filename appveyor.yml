@@ -37,12 +37,6 @@ install:
 # Disable AppVeyor's attempts to automatically build the code
 build: off
 
-# Just attempt to build and import the module under Windows since the full
-# test suite cannot be run.
-test_script:
-  - "python setup.py install"
-  - "python -c \"import parasail; print(parasail.version())\""
-
 after_test:
   # This step builds your wheels.
   - "python setup.py bdist_wheel"
