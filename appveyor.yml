@@ -35,6 +35,8 @@ install:
   # We need wheel installed to build wheels
   - "python -m pip install wheel"
 
+build: off
+
 after_test:
   # This step builds your wheels.
   # Again, you only need build.cmd if you're building C extensions for
