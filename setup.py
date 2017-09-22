@@ -233,7 +233,7 @@ class bdist_wheel(bdist_wheel_):
                     search = "win64-v140"
                 for maybe_asset in data['assets']:
                     if search in maybe_asset['browser_download_url']:
-                        asset = maybe_asset
+                        asset = maybe_asset['browser_download_url']
                         break
                 if not asset:
                     raise RuntimeError("Unable to determine asset URL")
