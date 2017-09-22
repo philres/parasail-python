@@ -1,5 +1,10 @@
 environment:
 
+  # The (encrypted) password for the 'rigbots' PyPI account, used for
+  # deployment.
+  PYPIPASSWORD:
+    secure: jgGoNl5rbK62u86B8pKUmw==
+
   matrix:
 
     # For Python versions available on Appveyor, see
@@ -13,12 +18,6 @@ environment:
     - PYTHON: "C:\\Python33-x64"
 
 install:
-  - ECHO "Filesystem root:"
-  - ps: "ls \"C:/\""
-
-  - ECHO "Installed SDKs:"
-  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
-
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
@@ -35,21 +34,39 @@ install:
   # We need wheel installed to build wheels
   - "python -m pip install wheel"
 
+# Disable AppVeyor's attempts to automatically build the code
 build: off
+
+# Just attempt to build and import the module under Windows since the full
+# test suite cannot be run.
+test_script:
+  - "python setup.py install"
+  - "python -c \"import parasail; print(parasail.version())\""
 
 after_test:
   # This step builds your wheels.
-  # Again, you only need build.cmd if you're building C extensions for
-  # 64-bit Python 3.3/3.4. And you need to use %PYTHON% to get the correct
-  # interpreter
   - "python setup.py bdist_wheel"
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
 
-#on_success:
-#  You can use this step to upload your artifacts to a public website.
-#  See Appveyor's documentation for more details. Or you can simply
-#  access your wheels from the Appveyor "artifacts" tab for your build.
+on_success:
+  # Specify account details for PyPI
+  - echo [distutils]                                  > %USERPROFILE%\\.pypirc
+  - echo index-servers =                             >> %USERPROFILE%\\.pypirc
+  - echo     pypi                                    >> %USERPROFILE%\\.pypirc
+  - echo [pypi]                                      >> %USERPROFILE%\\.pypirc
+  - echo repository=https://pypi.python.org/pypi     >> %USERPROFILE%\\.pypirc
+  - echo username=jeff.daily                         >> %USERPROFILE%\\.pypirc
+  - echo password=%PYPIPASSWORD%                     >> %USERPROFILE%\\.pypirc
+
+  # Workaround required to ensure setup.py finds the .pypirc under Windows
+  - set HOME=%USERPROFILE%
+
+  # Deploy a wheel (only actually do this for tags). NB That breaking this line
+  # with Unix line-endings causes the windows command interpreter to barf so
+  # this is given as one-line to make this script less fragile when edited on
+  # other OSes.
+  - if "%APPVEYOR_REPO_TAG%"=="true" ( %PYTHON%\\python.exe setup.py bdist_wheel upload ) else ( echo "Not deploying because not a tagged commit." )
 
