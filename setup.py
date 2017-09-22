@@ -237,13 +237,13 @@ class bdist_wheel(bdist_wheel_):
                         break
                 if not asset:
                     raise RuntimeError("Unable to determine asset URL")
-                print("Downloading latest parasail release {}".format(asset)
+                print("Downloading latest parasail release {}".format(asset))
                 archive = asset.rsplit('/',1)[-1]
                 name,hdrs = urlretrieve(asset, archive)
                 destdir = archive.rsplit('.',1)[0]
-                print("Unzipping {}".format(archive)
+                print("Unzipping {}".format(archive))
                 unzip(archive, destdir)
-                print("Locating {}".format(libname)
+                print("Locating {}".format(libname))
                 root = find_file(libname)
                 src = os.path.join(root, libname)
                 dst = 'parasail'
