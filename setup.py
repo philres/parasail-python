@@ -53,12 +53,9 @@ INSTALL_REQUIRES = ["numpy"]
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 
-def is_windows_64bit():
-    if 'PROCESSOR_ARCHITEW6432' in os.environ:
-        return True
-    if platform.machine().endswith('64'):
-        return True
-    return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')
+def is_python_64bit():
+    import struct
+    return struct.calcsize('P')*8 == 64
 
 def read(*parts):
     """
@@ -229,7 +226,7 @@ class bdist_wheel(bdist_wheel_):
                     raise RuntimeError("Unable to download github asset JSON")
                 asset = None
                 search = "win32-v140"
-                if is_windows_64bit():
+                if is_python_64bit():
                     search = "win64-v140"
                 for maybe_asset in data['assets']:
                     if search in maybe_asset['browser_download_url']:
