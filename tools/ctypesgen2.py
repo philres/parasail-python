@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Creates the parasail.py file used for the python bindings.
+# Creates the parasail/bindings_v2.py file used for the python bindings.
 
 import sys
 
@@ -14,15 +14,6 @@ import os
 import sys
 
 import numpy
-
-__version__ = "1.0.2"
-__title__ = "parasail"
-__description__ = "pairwise sequence alignment library"
-__uri__ = "https://github.com/jeffdaily/parasail-python"
-__author__ = "Jeff Daily"
-__email__ = "jeff.daily@pnnl.gov"
-__license__ = "BSD"
-__copyright__ = "Copyright (c) 2016 Jeff Daily"
 
 _libname = "libparasail.so"
 if platform.system() == 'Darwin':
@@ -67,52 +58,98 @@ c_int_p = ctypes.POINTER(ctypes.c_int)
 
 class result_t(ctypes.Structure):
     _fields_ = [
-       ("saturated",     ctypes.c_int),
        ("score",         ctypes.c_int),
-       ("matches",       ctypes.c_int),
-       ("similar",       ctypes.c_int),
-       ("length",        ctypes.c_int),
        ("end_query",     ctypes.c_int),
        ("end_ref",       ctypes.c_int),
-       ("score_table",   c_int_p),
-       ("matches_table", c_int_p),
-       ("similar_table", c_int_p),
-       ("length_table",  c_int_p),
-       ("score_row",     c_int_p),
-       ("matches_row",   c_int_p),
-       ("similar_row",   c_int_p),
-       ("length_row",    c_int_p),
-       ("score_col",     c_int_p),
-       ("matches_col",   c_int_p),
-       ("similar_col",   c_int_p),
-       ("length_col",    c_int_p)
+       ("flag",          ctypes.c_int),
+       ("extra",         ctypes.c_void_p)
        ]
 
 c_result_p = ctypes.POINTER(result_t)
 
+c_uint32_p = ctypes.POINTER(ctypes.c_uint32)
+
+class cigar_t(ctypes.Structure):
+    _fields_ = [
+        ("seq",       c_uint32_p),
+        ("len",       ctypes.c_int),
+        ("beg_query", ctypes.c_int),
+        ("beg_ref",   ctypes.c_int)
+    ]
+
+c_cigar_p = ctypes.POINTER(cigar_t)
+
+class result_ssw_t(ctypes.Structure):
+    _fields_ = [
+        ("score1",      ctypes.c_uint16),
+	("ref_begin1",  ctypes.c_int32),
+	("ref_end1",    ctypes.c_int32),
+	("read_begin1", ctypes.c_int32),
+	("read_end1",   ctypes.c_int32),
+	("cigar",	c_cigar_p),
+	("cigarLen",	ctypes.c_int32)
+    ]
+
+class Cigar:
+    def __init__(self, pointer):
+        self.pointer = pointer
+    def __del__(self):
+        _lib.parasail_cigar_free(self.pointer)
+    @property
+    def seq(self):
+        return _make_nd_array(
+            self.pointer[0].seq,
+            (self.pointer[0].len,),
+	    numpy.uint32)
+    @property
+    def len(self):
+        return self.pointer[0].len
+    @property
+    def beg_query(self):
+        return self.pointer[0].beg_query
+    @property
+    def beg_ref(self):
+        return self.pointer[0].beg_ref
+    @property
+    def decode(self):
+        # this allocates a char array, and we must free it
+        voidp = _lib.parasail_cigar_decode(self.pointer)
+        as_str = ctypes.string_at(voidp)
+        _lib.parasail_free(voidp)
+        return as_str
+
 class Result:
-    def __init__(self, pointer, len_query, len_ref):
+    def __init__(self, pointer, len_query, len_ref, query=None, ref=None, matrix=None):
         self.pointer = pointer
         self.len_query = len_query
         self.len_ref = len_ref
+	self.query = query
+	self.ref = ref
+	self.matrix = matrix
         self._as_parameter_ = pointer
     def __del__(self):
         _lib.parasail_result_free(self.pointer)
     @property
     def saturated(self):
-        return self.pointer[0].saturated != 0
+        return _lib.parasail_result_is_saturated(self.pointer) != 0
     @property
     def score(self):
         return self.pointer[0].score
     @property
     def matches(self):
-        return self.pointer[0].matches
+        if 0 == _lib.parasail_result_is_stats(self.pointer):
+            raise AttributeError("'Result' object has no stats")
+        return _lib.parasail_result_get_matches(self.pointer)
     @property
     def similar(self):
-        return self.pointer[0].similar
+        if 0 == _lib.parasail_result_is_stats(self.pointer):
+            raise AttributeError("'Result' object has no stats")
+        return _lib.parasail_result_get_similar(self.pointer)
     @property
     def length(self):
-        return self.pointer[0].length
+        if 0 == _lib.parasail_result_is_stats(self.pointer):
+            raise AttributeError("'Result' object has no stats")
+        return _lib.parasail_result_get_length(self.pointer)
     @property
     def end_query(self):
         return self.pointer[0].end_query
@@ -121,64 +158,93 @@ class Result:
         return self.pointer[0].end_ref
     @property
     def score_table(self):
+        if 0 == _lib.parasail_result_is_stats_table(self.pointer):
+            raise AttributeError("'Result' object has no stats tables")
         return _make_nd_array(
-            self.pointer[0].score_table,
+            _lib.parasail_result_get_score_table(self.pointer),
             (self.len_query, self.len_ref))
     @property
     def matches_table(self):
+        if 0 == _lib.parasail_result_is_stats_table(self.pointer):
+            raise AttributeError("'Result' object has no stats tables")
         return _make_nd_array(
-            self.pointer[0].matches_table,
+            _lib.parasail_result_get_matches_table(self.pointer),
             (self.len_query, self.len_ref))
     @property
     def similar_table(self):
+        if 0 == _lib.parasail_result_is_stats_table(self.pointer):
+            raise AttributeError("'Result' object has no stats tables")
         return _make_nd_array(
-            self.pointer[0].similar_table,
+            _lib.parasail_result_get_similar_table(self.pointer),
             (self.len_query, self.len_ref))
     @property
     def length_table(self):
+        if 0 == _lib.parasail_result_is_stats_table(self.pointer):
+            raise AttributeError("'Result' object has no stats tables")
         return _make_nd_array(
-            self.pointer[0].length_table,
+            _lib.parasail_result_get_length_table(self.pointer),
             (self.len_query, self.len_ref))
     @property
     def score_row(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].score_row,
+            _lib.parasail_result_get_score_row(self.pointer),
             (self.len_ref,))
     @property
     def matches_row(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].matches_row,
+            _lib.parasail_result_get_matches_row(self.pointer),
             (self.len_ref,))
     @property
     def similar_row(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].similar_row,
+            _lib.parasail_result_get_similar_row(self.pointer),
             (self.len_ref,))
     @property
     def length_row(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].length_row,
+            _lib.parasail_result_get_length_row(self.pointer),
             (self.len_ref,))
     @property
     def score_col(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].score_col,
+            _lib.parasail_result_get_score_col(self.pointer),
             (self.len_query,))
     @property
     def matches_col(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].matches_col,
+            _lib.parasail_result_get_matches_col(self.pointer),
             (self.len_query,))
     @property
     def similar_col(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].similar_col,
+            _lib.parasail_result_get_similar_col(self.pointer),
             (self.len_query,))
     @property
     def length_col(self):
+        if 0 == _lib.parasail_result_is_rowcol(self.pointer):
+            raise AttributeError("'Result' object has no row/col arrays")
         return _make_nd_array(
-            self.pointer[0].length_col,
+            _lib.parasail_result_get_length_col(self.pointer),
             (self.len_query,))
+    @property
+    def cigar(self):
+        if 0 == _lib.parasail_result_is_trace(self.pointer):
+            raise AttributeError("'Result' object has no traceback")
+        return Cigar(_lib.parasail_result_get_cigar(self.pointer, self.query, self.len_query, self.ref, self.len_ref, self.matrix))
 
 class matrix_t(ctypes.Structure):
     _fields_ = [
@@ -375,7 +441,13 @@ def can_use_sse41():
 def can_use_sse2():
     return bool(_lib.parasail_can_use_sse2())
 
+def can_use_altivec():
+    return bool(_lib.parasail_can_use_altivec())
+
 # begin non-alignment functions defined here
+
+_lib.parasail_free.argtypes = [ctypes.c_void_p]
+_lib.parasail_free.restype = None
 
 # parasail_profile_free is not exposed.
 # Memory is managed by the Profile class.
@@ -386,19 +458,6 @@ _lib.parasail_profile_free.restype = None
 # Memory is managed by the Result class.
 _lib.parasail_result_free.argtypes = [c_result_p]
 _lib.parasail_result_free.restype = None
-
-_lib.parasail_version.argtypes = [c_int_p, c_int_p, c_int_p]
-_lib.parasail_version.restype = None
-
-def version():
-    major = ctypes.c_int()
-    minor = ctypes.c_int()
-    patch = ctypes.c_int()
-    _lib.parasail_version(
-            ctypes.byref(major),
-            ctypes.byref(minor),
-            ctypes.byref(patch))
-    return major.value, minor.value, patch.value
 
 _lib.parasail_time.argtypes = []
 _lib.parasail_time.restype = ctypes.c_double
@@ -499,6 +558,169 @@ _lib.parasail_matrix_set_value.restype = None
 _lib.parasail_matrix_copy.argtypes = [c_matrix_p]
 _lib.parasail_matrix_copy.restype = c_matrix_p
 
+_lib.parasail_nw_banded.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, c_matrix_p]
+_lib.parasail_nw_banded.restype = c_result_p
+
+def nw_banded(s1, s2, open, extend, k, matrix):
+    return Result(_lib.parasail_nw_banded(b(s1), len(s1), b(s2), len(s2), open, extend, k, matrix), len(s1), len(s2))
+
+_lib.parasail_cigar_encode.argtypes = [ctypes.c_uint32, ctypes.c_char]
+_lib.parasail_cigar_encode.restype = ctypes.c_uint32
+
+_lib.parasail_cigar_encode_string.argtypes = [ctypes.c_char_p]
+_lib.parasail_cigar_encode_string.restype = c_cigar_p
+
+_lib.parasail_cigar_decode_op.argtypes = [ctypes.c_uint32]
+_lib.parasail_cigar_decode_op.restype = ctypes.c_char
+
+_lib.parasail_cigar_decode_len.argtypes = [ctypes.c_uint32]
+_lib.parasail_cigar_decode_len.restype = ctypes.c_uint32
+
+_lib.parasail_cigar_decode.argtypes = [c_cigar_p]
+_lib.parasail_cigar_decode.restype = ctypes.c_void_p
+
+_lib.parasail_result_get_cigar.argtypes = [c_result_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, c_matrix_p]
+_lib.parasail_result_get_cigar.restype = c_cigar_p
+
+_lib.parasail_result_is_nw.argtypes = [c_result_p]
+_lib.parasail_result_is_nw.restype = ctypes.c_int
+
+_lib.parasail_result_is_sg.argtypes = [c_result_p]
+_lib.parasail_result_is_sg.restype = ctypes.c_int
+
+_lib.parasail_result_is_sw.argtypes = [c_result_p]
+_lib.parasail_result_is_sw.restype = ctypes.c_int
+
+_lib.parasail_result_is_saturated.argtypes = [c_result_p]
+_lib.parasail_result_is_saturated.restype = ctypes.c_int
+
+_lib.parasail_result_is_banded.argtypes = [c_result_p]
+_lib.parasail_result_is_banded.restype = ctypes.c_int
+
+_lib.parasail_result_is_scan.argtypes = [c_result_p]
+_lib.parasail_result_is_scan.restype = ctypes.c_int
+
+_lib.parasail_result_is_striped.argtypes = [c_result_p]
+_lib.parasail_result_is_striped.restype = ctypes.c_int
+
+_lib.parasail_result_is_diag.argtypes = [c_result_p]
+_lib.parasail_result_is_diag.restype = ctypes.c_int
+
+_lib.parasail_result_is_blocked.argtypes = [c_result_p]
+_lib.parasail_result_is_blocked.restype = ctypes.c_int
+
+_lib.parasail_result_is_stats.argtypes = [c_result_p]
+_lib.parasail_result_is_stats.restype = ctypes.c_int
+
+_lib.parasail_result_is_stats_table.argtypes = [c_result_p]
+_lib.parasail_result_is_stats_table.restype = ctypes.c_int
+
+_lib.parasail_result_is_stats_rowcol.argtypes = [c_result_p]
+_lib.parasail_result_is_stats_rowcol.restype = ctypes.c_int
+
+_lib.parasail_result_is_table.argtypes = [c_result_p]
+_lib.parasail_result_is_table.restype = ctypes.c_int
+
+_lib.parasail_result_is_rowcol.argtypes = [c_result_p]
+_lib.parasail_result_is_rowcol.restype = ctypes.c_int
+
+_lib.parasail_result_is_trace.argtypes = [c_result_p]
+_lib.parasail_result_is_trace.restype = ctypes.c_int
+
+_lib.parasail_result_get_score.argtypes = [c_result_p]
+_lib.parasail_result_get_score.restype = ctypes.c_int
+
+_lib.parasail_result_get_end_query.argtypes = [c_result_p]
+_lib.parasail_result_get_end_query.restype = ctypes.c_int
+
+_lib.parasail_result_get_end_ref.argtypes = [c_result_p]
+_lib.parasail_result_get_end_ref.restype = ctypes.c_int
+
+_lib.parasail_result_get_matches.argtypes = [c_result_p]
+_lib.parasail_result_get_matches.restype = ctypes.c_int
+
+_lib.parasail_result_get_similar.argtypes = [c_result_p]
+_lib.parasail_result_get_similar.restype = ctypes.c_int
+
+_lib.parasail_result_get_length.argtypes = [c_result_p]
+_lib.parasail_result_get_length.restype = ctypes.c_int
+
+_lib.parasail_result_get_score_table.argtypes = [c_result_p]
+_lib.parasail_result_get_score_table.restype = ctypes.c_int
+
+_lib.parasail_result_get_matches_table.argtypes = [c_result_p]
+_lib.parasail_result_get_matches_table.restype = ctypes.c_int
+
+_lib.parasail_result_get_similar_table.argtypes = [c_result_p]
+_lib.parasail_result_get_similar_table.restype = ctypes.c_int
+
+_lib.parasail_result_get_length_table.argtypes = [c_result_p]
+_lib.parasail_result_get_length_table.restype = ctypes.c_int
+
+_lib.parasail_result_get_score_row.argtypes = [c_result_p]
+_lib.parasail_result_get_score_row.restype = ctypes.c_int
+
+_lib.parasail_result_get_matches_row.argtypes = [c_result_p]
+_lib.parasail_result_get_matches_row.restype = ctypes.c_int
+
+_lib.parasail_result_get_similar_row.argtypes = [c_result_p]
+_lib.parasail_result_get_similar_row.restype = ctypes.c_int
+
+_lib.parasail_result_get_length_row.argtypes = [c_result_p]
+_lib.parasail_result_get_length_row.restype = ctypes.c_int
+
+_lib.parasail_result_get_score_col.argtypes = [c_result_p]
+_lib.parasail_result_get_score_col.restype = ctypes.c_int
+
+_lib.parasail_result_get_matches_col.argtypes = [c_result_p]
+_lib.parasail_result_get_matches_col.restype = ctypes.c_int
+
+_lib.parasail_result_get_similar_col.argtypes = [c_result_p]
+_lib.parasail_result_get_similar_col.restype = ctypes.c_int
+
+_lib.parasail_result_get_length_col.argtypes = [c_result_p]
+_lib.parasail_result_get_length_col.restype = ctypes.c_int
+
+_lib.parasail_result_get_trace_table.argtypes = [c_result_p]
+_lib.parasail_result_get_trace_table.restype = ctypes.c_int
+
+_lib.parasail_result_get_trace_ins_table.argtypes = [c_result_p]
+_lib.parasail_result_get_trace_ins_table.restype = ctypes.c_int
+
+_lib.parasail_result_get_trace_del_table.argtypes = [c_result_p]
+_lib.parasail_result_get_trace_del_table.restype = ctypes.c_int
+
+class SSWResult:
+    def __init__(self, pointer):
+        self.pointer = pointer
+        self._as_parameter_ = pointer
+    def __del__(self):
+        _lib.parasail_result_ssw_free(self.pointer)
+    @property
+    def score1(self):
+        return self.pointer[0].score1
+    @property
+    def ref_begin1(self):
+        return self.pointer[0].ref_begin1
+    @property
+    def ref_end1(self):
+        return self.pointer[0].ref_end1
+    @property
+    def read_begin1(self):
+        return self.pointer[0].read_begin1
+    @property
+    def read_end1(self):
+        return self.pointer[0].read_end1
+    @property
+    def cigar(self):
+        return _make_nd_array(
+            self.pointer,
+            (self.cigarLen,),
+	    numpy.uint32)
+    @property
+    def cigarLen(self):
+        return self.pointer[0].cigarLen
+
 # begin generated names here
 
 _argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, c_matrix_p]
@@ -507,42 +729,51 @@ _argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctype
 # serial reference implementations (3x2x3 = 18 impl)
 alg = ["nw", "sg", "sw"]
 stats = ["", "_stats"]
-table = ["", "_table", "_rowcol"]
+table = ["", "_table", "_rowcol", "_trace"]
 for a in alg:
     for s in stats:
         for t in table:
+            if 'trace' in t and 'stats' in s: continue
             myprint("")
             myprint("_lib.parasail_"+a+s+t+".argtypes = _argtypes")
             myprint("_lib.parasail_"+a+s+t+".restype = c_result_p")
             myprint("def "+a+s+t+"(s1, s2, open, extend, matrix):")
             myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+"(")
             myprint(" "*8+"b(s1), len(s1), b(s2), len(s2), open, extend, matrix),")
-            myprint(" "*8+"len(s1), len(s2))")
+            if 'trace' in t:
+                myprint(" "*8+"len(s1), len(s2), s1, s2, matrix)")
+            else:
+                myprint(" "*8+"len(s1), len(s2))")
 
 ## serial scan reference implementations (3x2x3 = 18 impl)
 alg = ["nw", "sg", "sw"]
 stats = ["", "_stats"]
-table = ["", "_table", "_rowcol"]
+table = ["", "_table", "_rowcol", "_trace"]
 for a in alg:
     for s in stats:
         for t in table:
+            if 'trace' in t and 'stats' in s: continue
             myprint("")
             myprint("_lib.parasail_"+a+s+t+"_scan.argtypes = _argtypes")
             myprint("_lib.parasail_"+a+s+t+"_scan.restype = c_result_p")
             myprint("def "+a+s+t+"_scan(s1, s2, open, extend, matrix):")
             myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+"_scan(")
             myprint(" "*8+"b(s1), len(s1), b(s2), len(s2), open, extend, matrix),")
-            myprint(" "*8+"len(s1), len(s2))")
+            if 'trace' in t:
+                myprint(" "*8+"len(s1), len(s2), s1, s2, matrix)")
+            else:
+                myprint(" "*8+"len(s1), len(s2))")
 
 # vectorized implementations (3x2x3x3x4 = 216 impl)
 alg = ["nw", "sg", "sw"]
 stats = ["", "_stats"]
-table = ["", "_table", "_rowcol"]
+table = ["", "_table", "_rowcol", "_trace"]
 par = ["_scan", "_striped", "_diag"]
 width = ["_64","_32","_16","_8","_sat"]
 for a in alg:
     for s in stats:
         for t in table:
+            if 'trace' in t and 'stats' in s: continue
             for p in par:
                 for w in width:
                     myprint("")
@@ -551,7 +782,10 @@ for a in alg:
                     myprint("def "+a+s+t+p+w+"(s1, s2, open, extend, matrix):")
                     myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+p+w+"(")
                     myprint(" "*8+"b(s1), len(s1), b(s2), len(s2), open, extend, matrix),")
-                    myprint(" "*8+"len(s1), len(s2))")
+                    if 'trace' in t:
+                        myprint(" "*8+"len(s1), len(s2), s1, s2, matrix)")
+                    else:
+                        myprint(" "*8+"len(s1), len(s2))")
 
 myprint("""
 _argtypes = [c_profile_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
@@ -560,12 +794,13 @@ _argtypes = [c_profile_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_
 # vectorized profile implementations (3x2x3x2x4 = 144 impl)
 alg = ["nw", "sg", "sw"]
 stats = ["", "_stats"]
-table = ["", "_table", "_rowcol"]
+table = ["", "_table", "_rowcol", "_trace"]
 par = ["_scan_profile", "_striped_profile"]
 width = ["_64","_32","_16","_8","_sat"]
 for a in alg:
     for s in stats:
         for t in table:
+            if 'trace' in t and 'stats' in s: continue
             for p in par:
                 for w in width:
                     myprint("")
@@ -574,5 +809,8 @@ for a in alg:
                     myprint("def "+a+s+t+p+w+"(profile, s2, open, extend):")
                     myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+p+w+"(")
                     myprint(" "*8+"profile, b(s2), len(s2), open, extend),")
-                    myprint(" "*8+"profile.s1Len, len(s2))")
+                    if 'trace' in t:
+                        myprint(" "*8+"len(s1), len(s2), s1, s2, matrix)")
+                    else:
+                        myprint(" "*8+"len(s1), len(s2))")
 

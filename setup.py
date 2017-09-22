@@ -1,4 +1,5 @@
 import codecs
+import json
 import os
 import platform
 import re
@@ -51,6 +52,13 @@ INSTALL_REQUIRES = ["numpy"]
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
+
+def is_windows_64bit():
+    if 'PROCESSOR_ARCHITEW6432' in os.environ:
+        return True
+    if platform.machine().endswith('64'):
+        return True
+    return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')
 
 def read(*parts):
     """
@@ -205,7 +213,44 @@ class bdist_wheel(bdist_wheel_):
     def run(self):
         libname = get_libname()
         if not os.path.exists(os.path.join("parasail", libname)):
-            build_parasail(libname)
+            if platform.system() == "Windows":
+                # download latest release JSON
+                address = "https://api.github.com/repos/jeffdaily/parasail/releases/latest"
+                data = None
+                if (sys.version_info > (3, 0)):
+                    import urllib.request
+                    with urllib.request.urlopen(address) as url:
+                        data = json.loads(url.read().decode())
+                else:
+                    import urllib
+                    response = urllib.urlopen(address)
+                    data = json.loads(response.read())
+                if not data:
+                    raise RuntimeError("Unable to download github asset JSON")
+                asset = None
+                search = "win32-v140"
+                if is_windows_64bit():
+                    search = "win64-v140"
+                for maybe_asset in data['assets']:
+                    if search in maybe_asset['browser_download_url']:
+                        asset = maybe_asset
+                        break
+                if not asset:
+                    raise RuntimeError("Unable to determine asset URL")
+                print("Downloading latest parasail release {}".format(asset)
+                archive = asset.rsplit('/',1)[-1]
+                name,hdrs = urlretrieve(asset, archive)
+                destdir = archive.rsplit('.',1)[0]
+                print("Unzipping {}".format(archive)
+                unzip(archive, destdir)
+                print("Locating {}".format(libname)
+                root = find_file(libname)
+                src = os.path.join(root, libname)
+                dst = 'parasail'
+                print("copying {} to {}".format(src,dst))
+                shutil.copy(src,dst)
+            else:
+                build_parasail(libname)
         if not os.path.exists(os.path.join("parasail", libname)):
             raise RuntimeError("Unable to find shared library {lib}.".format(lib=libname))
         bdist_wheel_.run(self)
