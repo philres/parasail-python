@@ -259,7 +259,11 @@ class bdist_wheel(bdist_wheel_):
         self.plat_name = get_platform()
 
 if __name__ == "__main__":
-    long_description = open("README.rst").read()
+    long_description = ""
+    try:
+        long_description = open("README.rst", encoding="utf8").read()
+    except:
+        long_description = open("README.rst").read()
     setup(
         name=NAME,
         description=find_meta("description"),
