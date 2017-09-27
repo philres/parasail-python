@@ -7,6 +7,15 @@ Table of Contents
 -----------------
 
 -  `Installation <#installation>`__
+
+  -  `Using pip <#using-pip>`__
+  -  `Building from Source <#building-from-source>`__
+
+-  `Quick Example <#quick-example>`__
+-  `Standard Function Naming Convention <#standard-function-naming-convention>`__
+-  `Profile Function Naming Convention <#profile-function-naming-convention>`__
+-  `Substitution Matrices <#substitution-matrices>`__
+-  `Banded Global Alignment <#banded-global-alignment>`__
 -  `Citing parasail <#citing-parasail>`__
 -  `License: Battelle BSD-style <#license-battelle-bsd-style>`__
 
@@ -24,6 +33,8 @@ Installation
 Using pip
 +++++++++
 
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+
 The recommended way of installing is to use the latest version available via pip.
 
 ::
@@ -34,6 +45,8 @@ Binaries for Windows and OSX should be available via pip.  Using pip on a Linux 
 
 Building from Source
 ++++++++++++++++++++
+
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
 
 The parasail python bindings are based on ctypes.  Unfortunately, best practices are not firmly established for providing cross-platform and user-friendly python bindings based on ctypes.  The approach with parasail-python is to install the parasail shared library as "package data" and use a relative path from the parasail/__init__.py in order to locate the shared library.
 
@@ -47,8 +60,10 @@ The second approach is to let the setup.py script attempt to download and compil
 
 The bdist_wheel target will first look for the shared library.  If it exists, it will happily install it as package data.  Otherwise, the latest parasail master branch from github will be downloaded, unzipped, configured, made, and the shared library will be copied into the appropriate location for package data installation.
 
-Example
--------
+Quick Example
+-------------
+
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
 
 The Python interface only includes bindings for the dispatching
 functions, not the low-level instruction set-specific function calls.
@@ -62,6 +77,164 @@ Gap open and extension penalties are specified as positive integers.
     import parasail
     result = parasail.sw_scan_16("asdf", "asdf", 11, 1, parasail.blosum62)
     result = parasail.sw_stats_striped_8("asdf", "asdf", 11, 1, parasail.pam100)
+
+Standard Function Naming Convention
+-----------------------------------
+
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+
+To make it easier to find the function you're looking for, the function names follow a naming convention.  The following will use set notation {} to indicate a selection must be made and brackets [] to indicate an optional part of the name.
+
+- Non-vectorized, reference implementations.
+
+  - Required, select one of global (nw), semi-global (sg), or local (sw) alignment.
+  - Optional return alignment statistics.
+  - Optional return DP table or last row/col.
+  - Optional use a prefix scan implementation.
+  - ``parasail. {nw,sg,sw} [_stats] [{_table,_rowcol}] [_scan]``
+
+- Non-vectorized, traceback-capable reference implementations.
+
+  - Required, select one of global (nw), semi-global (sg), or local (sw) alignment.
+  - Optional use a prefix scan implementation.
+  - ``parasail. {nw,sg,sw} _trace [_scan]``
+
+- Vectorized.
+
+  - Required, select one of global (nw), semi-global (sg), or local (sw) alignment.
+  - Optional return alignment statistics.
+  - Optional return DP table or last row/col.
+  - Required, select vectorization strategy -- striped is a good place to start, but scan is often faster for global alignment.
+  - Required, select solution width. 'sat' will attempt 8-bit solution but if overflow is detected it will then perform the 16-bit operation. Can be faster in some cases, though 16-bit is often sufficient.
+  - ``parasail. {nw,sg,sw} [_stats] [{_table,_rowcol}] {_striped,_scan,_diag} {_8,_16,_32,_64,_sat}``
+
+- Vectorized, traceback-capable.
+
+  - Required, select one of global (nw), semi-global (sg), or local (sw) alignment.
+  - Required, select vectorization strategy -- striped is a good place to start, but scan is often faster for global alignment.
+  - Required, select solution width. 'sat' will attempt 8-bit solution but if overflow is detected it will then perform the 16-bit operation. Can be faster in some cases, though 16-bit is often sufficient.
+  - ``parasail. {nw,sg,sw} _trace {_striped,_scan,_diag} {_8,_16,_32,_64,_sat}``
+
+Profile Function Naming Convention
+----------------------------------
+
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+
+It has been noted in literature that some performance can be gained by reusing the query sequence when using striped [Farrar, 2007] or scan [Daily, 2015] vector strategies.  There is a special subset of functions that enables this behavior.  For the striped and scan vector implementations *only*, a query profile can be created and reused for subsequent alignments. This can noticeably speed up applications such as database search.
+
+- Profile creation
+
+  - Optional, prepare query profile for a function that returns statistics.  Stats require additional data structures to be allocated.
+  - Required, select solution width. 'sat' will allocate profiles for both 8- and 16-bit solutions.
+  - ``parasail.profile_create [_stats] {_8,_16,_32,_64,_sat}``
+
+- Profile use
+
+  - Vectorized.
+
+    - Required, select one of global (nw), semi-global (sg), or local (sw) alignment.
+    - Optional return alignment statistics.
+    - Optional return DP table or last row/col.
+    - Required, select vectorization strategy -- striped is a good place to start, but scan is often faster for global alignment.
+    - Required, select solution width. 'sat' will attempt 8-bit solution but if overflow is detected it will then perform the 16-bit operation. Can be faster in some cases, though 16-bit is often sufficient.
+    - ``parasail. {nw,sg,sw} [_stats] [{_table,_rowcol}] {_striped,_scan} _profile {_8,_16,_32,_64,_sat}``
+
+  - Vectorized, traceback-capable.
+
+    - Required, select one of global (nw), semi-global (sg), or local (sw) alignment.
+    - Required, select vectorization strategy -- striped is a good place to start, but scan is often faster for global alignment.
+    - Required, select solution width. 'sat' will attempt 8-bit solution but if overflow is detected it will then perform the 16-bit operation. Can be faster in some cases, though 16-bit is often sufficient.
+    - ``parasail. {nw,sg,sw} _trace {_striped,_scan} _profile {_8,_16,_32,_64,_sat}``
+
+
+This is a sample function signature of one of the profile creation functions.
+
+.. code:: python
+
+    profile = parasail.profile_create_8("asdf", parasail.blosum62)
+    result1 = parasail.sw_trace_striped_profile_16(profile, "asdf", 10, 1)
+    result2 = parasail.nw_scan_profile_16(profile, "asdf", 10, 1)
+
+Substitution Matrices
+---------------------
+
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+
+parasail bundles a number of substitution matrices including PAM and BLOSUM.  To use them, look them up by name (useful for command-line parsing) or use directly. For example
+
+.. code:: python
+
+    print(parasail.blosum62)
+    matrix = parasail.Matrix("pam100")
+
+You can also create your own matrices with simple match/mismatch values.
+For more complex matrices, you can start by copying a built-in matrix or
+start simple and modify values as needed. For example
+
+.. code:: python
+
+    # copy a built-in matrix, then modify like a numpy array
+    matrix = parasail.blosum62.copy()
+    matrix[2,4] = 200
+    matrix[3,:] = 100
+    user_matrix = parasail.matrix_create("ACGT", 2, -1)
+
+You can also parse simple matrix files using the function if the file is in the following format::
+
+	#
+	# Any line starting with '#' is a comment.
+	#
+	# Needs a row for the alphabet.  First column is a repeat of the
+	# alphabet and assumed to be identical in order to the first alphabet row.
+	#
+		A   T   G   C   S   W   R   Y   K   M   B   V   H   D   N   U
+	A   5  -4  -4  -4  -4   1   1  -4  -4   1  -4  -1  -1  -1  -2  -4
+	T  -4   5  -4  -4  -4   1  -4   1   1  -4  -1  -4  -1  -1  -2   5
+	G  -4  -4   5  -4   1  -4   1  -4   1  -4  -1  -1  -4  -1  -2  -4
+	C  -4  -4  -4   5   1  -4  -4   1  -4   1  -1  -1  -1  -4  -2  -4
+	S  -4  -4   1   1  -1  -4  -2  -2  -2  -2  -1  -1  -3  -3  -1  -4
+	W   1   1  -4  -4  -4  -1  -2  -2  -2  -2  -3  -3  -1  -1  -1   1
+	R   1  -4   1  -4  -2  -2  -1  -4  -2  -2  -3  -1  -3  -1  -1  -4
+	Y  -4   1  -4   1  -2  -2  -4  -1  -2  -2  -1  -3  -1  -3  -1   1
+	K  -4   1   1  -4  -2  -2  -2  -2  -1  -4  -1  -3  -3  -1  -1   1
+	M   1  -4  -4   1  -2  -2  -2  -2  -4  -1  -3  -1  -1  -3  -1  -4
+	B  -4  -1  -1  -1  -1  -3  -3  -1  -1  -3  -1  -2  -2  -2  -1  -1
+	V  -1  -4  -1  -1  -1  -3  -1  -3  -3  -1  -2  -1  -2  -2  -1  -4
+	H  -1  -1  -4  -1  -3  -1  -3  -1  -3  -1  -2  -2  -1  -2  -1  -1
+	D  -1  -1  -1  -4  -3  -1  -1  -3  -1  -3  -2  -2  -2  -1  -1  -1
+	N  -2  -2  -2  -2  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -2
+	U  -4   5  -4  -4  -4   1  -4   1   1  -4  -1  -4  -1  -1  -2   5
+
+.. code:: python
+
+    matrix_from_filename = parasail.Matrix("filename.txt")
+
+Banded Global Alignment
+-----------------------
+
+`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+
+There is one version of banded global alignment available.  Though it is not vectorized, it might still be faster than using other parasail global alignment functions, especially for large sequences.  The function signature is similar to the other parasail functions with the only exception being ``k``, the band width.
+
+.. code:: python
+
+    band_size = 3
+    result = parasail.nw_banded("asdf", "asdf", 10, 1, band_size, matrix):
+
+Tracebacks
+----------
+
+Parasail supports accessing a SAM CIGAR string from a result.  You must use a traceback-capable alignment function.  Refer to the C interface description above for details on how to use a traceback-capable alignment function.
+
+.. code:: python
+
+    result = parasail.sw_trace("asdf", "asdf", 10, 1, parasail.blosum62)
+    cigar = result.cigar
+    # cigars have seq, len, beg_query, and beg_ref properties
+    # the seq property is encoded
+    print(cigar.seq)
+    # use decode method to return a decoded cigar string
+    print(cigar.decode())
 
 Citing parasail
 ---------------
