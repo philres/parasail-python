@@ -8,13 +8,14 @@ Table of Contents
 
 -  `Installation <#installation>`__
 
-  -  `Using pip <#using-pip>`__
-  -  `Building from Source <#building-from-source>`__
+   -  `Using pip <#using-pip>`__
+   -  `Building from Source <#building-from-source>`__
 
 -  `Quick Example <#quick-example>`__
 -  `Standard Function Naming Convention <#standard-function-naming-convention>`__
 -  `Profile Function Naming Convention <#profile-function-naming-convention>`__
 -  `Substitution Matrices <#substitution-matrices>`__
+-  `SSW Library Emulation <#ssw-library-emulation>`__
 -  `Banded Global Alignment <#banded-global-alignment>`__
 -  `Citing parasail <#citing-parasail>`__
 -  `License: Battelle BSD-style <#license-battelle-bsd-style>`__
@@ -28,12 +29,12 @@ alignment algorithms.
 Installation
 ------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 Using pip
 +++++++++
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 The recommended way of installing is to use the latest version available via pip.
 
@@ -46,7 +47,7 @@ Binaries for Windows and OSX should be available via pip.  Using pip on a Linux 
 Building from Source
 ++++++++++++++++++++
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 The parasail python bindings are based on ctypes.  Unfortunately, best practices are not firmly established for providing cross-platform and user-friendly python bindings based on ctypes.  The approach with parasail-python is to install the parasail shared library as "package data" and use a relative path from the parasail/__init__.py in order to locate the shared library.
 
@@ -63,7 +64,7 @@ The bdist_wheel target will first look for the shared library.  If it exists, it
 Quick Example
 -------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 The Python interface only includes bindings for the dispatching
 functions, not the low-level instruction set-specific function calls.
@@ -81,7 +82,7 @@ Gap open and extension penalties are specified as positive integers.
 Standard Function Naming Convention
 -----------------------------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 To make it easier to find the function you're looking for, the function names follow a naming convention.  The following will use set notation {} to indicate a selection must be made and brackets [] to indicate an optional part of the name.
 
@@ -118,7 +119,7 @@ To make it easier to find the function you're looking for, the function names fo
 Profile Function Naming Convention
 ----------------------------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 It has been noted in literature that some performance can be gained by reusing the query sequence when using striped [Farrar, 2007] or scan [Daily, 2015] vector strategies.  There is a special subset of functions that enables this behavior.  For the striped and scan vector implementations *only*, a query profile can be created and reused for subsequent alignments. This can noticeably speed up applications such as database search.
 
@@ -158,7 +159,7 @@ This is a sample function signature of one of the profile creation functions.
 Substitution Matrices
 ---------------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 parasail bundles a number of substitution matrices including PAM and BLOSUM.  To use them, look them up by name (useful for command-line parsing) or use directly. For example
 
@@ -209,10 +210,31 @@ You can also parse simple matrix files using the function if the file is in the 
 
     matrix_from_filename = parasail.Matrix("filename.txt")
 
+SSW Library Emulation
+---------------------
+
+`back to top <#table-of-contents>`__
+
+The SSW library (https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library) performs Smith-Waterman local alignment using SSE2 instructions and a striped vector.  Its result provides the primary score, a secondary score, beginning and ending locations of the alignment for both the query and reference sequences, as well as a SAM CIGAR.  There are a few parasail functions that emulate this behavior, with the only exception being that parasail does not calculate a secondary score.
+
+.. code:: python
+
+    score_size = 1 # 0, use 8-bit align; 1, use 16-bit; 2, try both
+    profile = parasail.ssw_init("asdf", parasail.blosum62, score_size)
+    result = parasail.ssw_profile(profile, "asdf", 10, 1)
+    print(result.score1)
+    print(result.cigar)
+    print(result.ref_begin1)
+    print(result.ref_end1)
+    print(result.read_begin1)
+    print(result.read_end1)
+    # or skip profile creation
+    result = parasail.ssw("asdf", "asdf", 10, 1, parasail.blosum62)
+
 Banded Global Alignment
 -----------------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 There is one version of banded global alignment available.  Though it is not vectorized, it might still be faster than using other parasail global alignment functions, especially for large sequences.  The function signature is similar to the other parasail functions with the only exception being ``k``, the band width.
 
@@ -239,7 +261,7 @@ Parasail supports accessing a SAM CIGAR string from a result.  You must use a tr
 Citing parasail
 ---------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 If needed, please cite the following paper.
 
@@ -252,7 +274,7 @@ http://dx.doi.org/10.1186/s12859-016-0930-z
 License: Battelle BSD-style
 ---------------------------
 
-`back to top <#parasail-python-python-bindings-for-the-parasail-c-library>`__
+`back to top <#table-of-contents>`__
 
 Copyright (c) 2015, Battelle Memorial Institute
 
