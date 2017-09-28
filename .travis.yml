@@ -12,8 +12,6 @@ matrix:
 script:
 - python setup.py bdist_wheel
 
-install: pip install numpy
-
 deploy:
   provider: pypi
   user: jeff.daily
