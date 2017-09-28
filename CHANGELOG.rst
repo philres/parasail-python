@@ -10,6 +10,7 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+- Add travis build.
 - Add CHANGELOG.rst.
 - Add Cigar decode_op() decode_len() @staticmethods
 - Add bindings to the ssw emulation functions.

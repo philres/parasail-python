@@ -1,0 +1,26 @@
+language: c
+matrix:
+  include:
+  - os: linux
+  - os: osx
+    osx_image: xcode8.3
+  - os: osx
+    osx_image: xcode7.3
+  - os: osx
+    osx_image: xcode6.4
+
+script:
+- python setup.py bdist_wheel
+
+install: pip install numpy
+
+deploy:
+  provider: pypi
+  user: jeff.daily
+  password:
+    secure: TJoke8Y4ua0INT8BhVSIEsg7bTiIrxXLeqT9Eo+3wnzpqveNSV1KyW0o4rGVvMKkSFasJUFrUQ2PZXRTZXhCy8VFVbBG+I8tvcope6oP5o1fkSrKXgvTFhN0wRok4Zjm97ZStXos9s3H2VCeRLFAODwYE8M5jSbvWoCLKIFrC4XmDBUOiCOg2MM8mf/g0IPg5y9XlPfFc6yi2Iku2QHJge9ioongkBVQvMYrvk7geNFD9ZdRNiu8tyovNJeWurznaMN9FjURyUE/A2TkrDiyfgieHlR4h5eexijyFQBALvJvsyoXVss9jGanSELRBfrF+e28emu8eHwCG/F39sWR+MdTH4hyghT5ZjdvTQTbLy+PRsvyBT/i8S3PlgIpZe9lpuXTz3ZLMcFr8FIJK/GJr8qwK0EcTl8MEF8FKn89TY0knqBXCVQD+xpjpfn+JeUncIgaZQ0dLLLquPah8y4iQf+V/jJLEBb2iFpJBYJtSHcs0W6x+POqcBigGJbW+Oiz6rIbb6dL3TInFojt28ZxBHvhQou3ufdoKg8WrTrVMBX9UcqlBcVq/pVWIX1ratKj1RP/f7Yv89Ds8dQPbS0iKUSCnV/Kz2ZmtWznzEerLOmzBblO3BcQEI2lESRmv7fRmuf8GCZUe2WCq9NejYTW8d4pbVxyjN98UGfXQcqUf4c=
+  distributions: "bdist_wheel"
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: $TRAVIS_OS_NAME = "osx"
