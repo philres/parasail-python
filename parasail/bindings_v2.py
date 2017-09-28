@@ -77,9 +77,11 @@ class result_ssw_t(ctypes.Structure):
 	("ref_end1",    ctypes.c_int32),
 	("read_begin1", ctypes.c_int32),
 	("read_end1",   ctypes.c_int32),
-	("cigar",	c_cigar_p),
+	("cigar",	c_uint32_p),
 	("cigarLen",	ctypes.c_int32)
     ]
+
+c_result_ssw_p = ctypes.POINTER(result_ssw_t)
 
 class Cigar:
     def __init__(self, pointer):
@@ -108,6 +110,12 @@ class Cigar:
         as_str = ctypes.string_at(voidp)
         _lib.parasail_free(voidp)
         return as_str
+    @staticmethod
+    def decode_op(cigar_int):
+        return _lib.parasail_cigar_decode_op(cigar_int)
+    @staticmethod
+    def decode_len(cigar_int):
+        return _lib.parasail_cigar_decode_len(cigar_int)
 
 class Result:
     def __init__(self, pointer, len_query, len_ref, query=None, ref=None, matrix=None):
@@ -573,6 +581,9 @@ _lib.parasail_cigar_decode.restype = ctypes.c_void_p
 _lib.parasail_result_get_cigar.argtypes = [c_result_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, c_matrix_p]
 _lib.parasail_result_get_cigar.restype = c_cigar_p
 
+_lib.parasail_cigar_free.argtypes = [c_cigar_p]
+_lib.parasail_cigar_free.restype = None
+
 _lib.parasail_result_is_nw.argtypes = [c_result_p]
 _lib.parasail_result_is_nw.restype = ctypes.c_int
 
@@ -705,12 +716,33 @@ class SSWResult:
     @property
     def cigar(self):
         return _make_nd_array(
-            self.pointer,
+            self.pointer[0].cigar,
             (self.cigarLen,),
 	    numpy.uint32)
     @property
     def cigarLen(self):
         return self.pointer[0].cigarLen
+
+_lib.parasail_ssw.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, c_matrix_p]
+_lib.parasail_ssw.restype = c_result_ssw_p
+
+_lib.parasail_ssw_profile.argtypes = [c_profile_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.parasail_ssw_profile.restype = c_result_ssw_p
+
+_lib.parasail_ssw_init.argtypes = [ctypes.c_char_p, ctypes.c_int, c_matrix_p, ctypes.c_int8]
+_lib.parasail_ssw_init.restype = c_profile_p
+
+_lib.parasail_result_ssw_free.argtype = [c_result_ssw_p]
+_lib.parasail_result_ssw_free.restype = None
+
+def ssw(s1, s2, open, extend, matrix):
+    return SSWResult(_lib.parasail_ssw(b(s1), len(s1), b(s2), len(s2), open, extend, matrix))
+
+def ssw_profile(profile, s2, open, extend):
+    return SSWResult(_lib.parasail_ssw_profile(profile, b(s2), len(s2), open, extend))
+
+def ssw_init(s1, matrix, score_size):
+    return Profile(_lib.parasail_ssw_init(b(s1), len(s1), matrix, score_size), matrix)
 
 # begin generated names here
 
@@ -3224,1467 +3256,1467 @@ _lib.parasail_nw_scan_profile_64.restype = c_result_p
 def nw_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_scan_profile_32.restype = c_result_p
 def nw_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_scan_profile_16.restype = c_result_p
 def nw_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_scan_profile_8.restype = c_result_p
 def nw_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_scan_profile_sat.restype = c_result_p
 def nw_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_striped_profile_64.restype = c_result_p
 def nw_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_striped_profile_32.restype = c_result_p
 def nw_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_striped_profile_16.restype = c_result_p
 def nw_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_striped_profile_8.restype = c_result_p
 def nw_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_striped_profile_sat.restype = c_result_p
 def nw_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_scan_profile_64.argtypes = _argtypes
 _lib.parasail_nw_table_scan_profile_64.restype = c_result_p
 def nw_table_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_table_scan_profile_32.restype = c_result_p
 def nw_table_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_table_scan_profile_16.restype = c_result_p
 def nw_table_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_table_scan_profile_8.restype = c_result_p
 def nw_table_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_table_scan_profile_sat.restype = c_result_p
 def nw_table_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_table_striped_profile_64.restype = c_result_p
 def nw_table_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_table_striped_profile_32.restype = c_result_p
 def nw_table_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_table_striped_profile_16.restype = c_result_p
 def nw_table_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_table_striped_profile_8.restype = c_result_p
 def nw_table_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_table_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_table_striped_profile_sat.restype = c_result_p
 def nw_table_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_table_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_scan_profile_64.argtypes = _argtypes
 _lib.parasail_nw_rowcol_scan_profile_64.restype = c_result_p
 def nw_rowcol_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_rowcol_scan_profile_32.restype = c_result_p
 def nw_rowcol_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_rowcol_scan_profile_16.restype = c_result_p
 def nw_rowcol_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_rowcol_scan_profile_8.restype = c_result_p
 def nw_rowcol_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_rowcol_scan_profile_sat.restype = c_result_p
 def nw_rowcol_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_rowcol_striped_profile_64.restype = c_result_p
 def nw_rowcol_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_rowcol_striped_profile_32.restype = c_result_p
 def nw_rowcol_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_rowcol_striped_profile_16.restype = c_result_p
 def nw_rowcol_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_rowcol_striped_profile_8.restype = c_result_p
 def nw_rowcol_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_rowcol_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_rowcol_striped_profile_sat.restype = c_result_p
 def nw_rowcol_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_rowcol_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_trace_scan_profile_64.argtypes = _argtypes
 _lib.parasail_nw_trace_scan_profile_64.restype = c_result_p
 def nw_trace_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_trace_scan_profile_32.restype = c_result_p
 def nw_trace_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_trace_scan_profile_16.restype = c_result_p
 def nw_trace_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_trace_scan_profile_8.restype = c_result_p
 def nw_trace_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_trace_scan_profile_sat.restype = c_result_p
 def nw_trace_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_trace_striped_profile_64.restype = c_result_p
 def nw_trace_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_trace_striped_profile_32.restype = c_result_p
 def nw_trace_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_trace_striped_profile_16.restype = c_result_p
 def nw_trace_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_trace_striped_profile_8.restype = c_result_p
 def nw_trace_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_trace_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_trace_striped_profile_sat.restype = c_result_p
 def nw_trace_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_trace_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_nw_stats_scan_profile_64.argtypes = _argtypes
 _lib.parasail_nw_stats_scan_profile_64.restype = c_result_p
 def nw_stats_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_stats_scan_profile_32.restype = c_result_p
 def nw_stats_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_stats_scan_profile_16.restype = c_result_p
 def nw_stats_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_stats_scan_profile_8.restype = c_result_p
 def nw_stats_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_stats_scan_profile_sat.restype = c_result_p
 def nw_stats_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_stats_striped_profile_64.restype = c_result_p
 def nw_stats_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_stats_striped_profile_32.restype = c_result_p
 def nw_stats_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_stats_striped_profile_16.restype = c_result_p
 def nw_stats_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_stats_striped_profile_8.restype = c_result_p
 def nw_stats_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_stats_striped_profile_sat.restype = c_result_p
 def nw_stats_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_scan_profile_64.argtypes = _argtypes
 _lib.parasail_nw_stats_table_scan_profile_64.restype = c_result_p
 def nw_stats_table_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_stats_table_scan_profile_32.restype = c_result_p
 def nw_stats_table_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_stats_table_scan_profile_16.restype = c_result_p
 def nw_stats_table_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_stats_table_scan_profile_8.restype = c_result_p
 def nw_stats_table_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_stats_table_scan_profile_sat.restype = c_result_p
 def nw_stats_table_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_stats_table_striped_profile_64.restype = c_result_p
 def nw_stats_table_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_stats_table_striped_profile_32.restype = c_result_p
 def nw_stats_table_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_stats_table_striped_profile_16.restype = c_result_p
 def nw_stats_table_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_stats_table_striped_profile_8.restype = c_result_p
 def nw_stats_table_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_table_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_stats_table_striped_profile_sat.restype = c_result_p
 def nw_stats_table_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_table_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_scan_profile_64.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_scan_profile_64.restype = c_result_p
 def nw_stats_rowcol_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_scan_profile_32.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_scan_profile_32.restype = c_result_p
 def nw_stats_rowcol_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_scan_profile_16.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_scan_profile_16.restype = c_result_p
 def nw_stats_rowcol_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_scan_profile_8.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_scan_profile_8.restype = c_result_p
 def nw_stats_rowcol_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_scan_profile_sat.restype = c_result_p
 def nw_stats_rowcol_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_striped_profile_64.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_striped_profile_64.restype = c_result_p
 def nw_stats_rowcol_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_striped_profile_32.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_striped_profile_32.restype = c_result_p
 def nw_stats_rowcol_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_striped_profile_16.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_striped_profile_16.restype = c_result_p
 def nw_stats_rowcol_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_striped_profile_8.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_striped_profile_8.restype = c_result_p
 def nw_stats_rowcol_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_nw_stats_rowcol_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_nw_stats_rowcol_striped_profile_sat.restype = c_result_p
 def nw_stats_rowcol_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_nw_stats_rowcol_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_scan_profile_64.restype = c_result_p
 def sg_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_scan_profile_32.restype = c_result_p
 def sg_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_scan_profile_16.restype = c_result_p
 def sg_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_scan_profile_8.restype = c_result_p
 def sg_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_scan_profile_sat.restype = c_result_p
 def sg_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_striped_profile_64.restype = c_result_p
 def sg_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_striped_profile_32.restype = c_result_p
 def sg_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_striped_profile_16.restype = c_result_p
 def sg_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_striped_profile_8.restype = c_result_p
 def sg_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_striped_profile_sat.restype = c_result_p
 def sg_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_table_scan_profile_64.restype = c_result_p
 def sg_table_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_table_scan_profile_32.restype = c_result_p
 def sg_table_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_table_scan_profile_16.restype = c_result_p
 def sg_table_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_table_scan_profile_8.restype = c_result_p
 def sg_table_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_table_scan_profile_sat.restype = c_result_p
 def sg_table_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_table_striped_profile_64.restype = c_result_p
 def sg_table_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_table_striped_profile_32.restype = c_result_p
 def sg_table_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_table_striped_profile_16.restype = c_result_p
 def sg_table_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_table_striped_profile_8.restype = c_result_p
 def sg_table_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_table_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_table_striped_profile_sat.restype = c_result_p
 def sg_table_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_table_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_rowcol_scan_profile_64.restype = c_result_p
 def sg_rowcol_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_rowcol_scan_profile_32.restype = c_result_p
 def sg_rowcol_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_rowcol_scan_profile_16.restype = c_result_p
 def sg_rowcol_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_rowcol_scan_profile_8.restype = c_result_p
 def sg_rowcol_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_rowcol_scan_profile_sat.restype = c_result_p
 def sg_rowcol_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_rowcol_striped_profile_64.restype = c_result_p
 def sg_rowcol_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_rowcol_striped_profile_32.restype = c_result_p
 def sg_rowcol_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_rowcol_striped_profile_16.restype = c_result_p
 def sg_rowcol_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_rowcol_striped_profile_8.restype = c_result_p
 def sg_rowcol_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_rowcol_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_rowcol_striped_profile_sat.restype = c_result_p
 def sg_rowcol_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_rowcol_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_trace_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_trace_scan_profile_64.restype = c_result_p
 def sg_trace_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_trace_scan_profile_32.restype = c_result_p
 def sg_trace_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_trace_scan_profile_16.restype = c_result_p
 def sg_trace_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_trace_scan_profile_8.restype = c_result_p
 def sg_trace_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_trace_scan_profile_sat.restype = c_result_p
 def sg_trace_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_trace_striped_profile_64.restype = c_result_p
 def sg_trace_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_trace_striped_profile_32.restype = c_result_p
 def sg_trace_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_trace_striped_profile_16.restype = c_result_p
 def sg_trace_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_trace_striped_profile_8.restype = c_result_p
 def sg_trace_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_trace_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_trace_striped_profile_sat.restype = c_result_p
 def sg_trace_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_trace_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sg_stats_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_stats_scan_profile_64.restype = c_result_p
 def sg_stats_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_stats_scan_profile_32.restype = c_result_p
 def sg_stats_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_stats_scan_profile_16.restype = c_result_p
 def sg_stats_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_stats_scan_profile_8.restype = c_result_p
 def sg_stats_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_stats_scan_profile_sat.restype = c_result_p
 def sg_stats_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_stats_striped_profile_64.restype = c_result_p
 def sg_stats_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_stats_striped_profile_32.restype = c_result_p
 def sg_stats_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_stats_striped_profile_16.restype = c_result_p
 def sg_stats_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_stats_striped_profile_8.restype = c_result_p
 def sg_stats_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_stats_striped_profile_sat.restype = c_result_p
 def sg_stats_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_stats_table_scan_profile_64.restype = c_result_p
 def sg_stats_table_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_stats_table_scan_profile_32.restype = c_result_p
 def sg_stats_table_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_stats_table_scan_profile_16.restype = c_result_p
 def sg_stats_table_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_stats_table_scan_profile_8.restype = c_result_p
 def sg_stats_table_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_stats_table_scan_profile_sat.restype = c_result_p
 def sg_stats_table_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_stats_table_striped_profile_64.restype = c_result_p
 def sg_stats_table_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_stats_table_striped_profile_32.restype = c_result_p
 def sg_stats_table_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_stats_table_striped_profile_16.restype = c_result_p
 def sg_stats_table_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_stats_table_striped_profile_8.restype = c_result_p
 def sg_stats_table_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_table_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_stats_table_striped_profile_sat.restype = c_result_p
 def sg_stats_table_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_table_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_scan_profile_64.restype = c_result_p
 def sg_stats_rowcol_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_scan_profile_32.restype = c_result_p
 def sg_stats_rowcol_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_scan_profile_16.restype = c_result_p
 def sg_stats_rowcol_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_scan_profile_8.restype = c_result_p
 def sg_stats_rowcol_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_scan_profile_sat.restype = c_result_p
 def sg_stats_rowcol_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_striped_profile_64.restype = c_result_p
 def sg_stats_rowcol_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_striped_profile_32.restype = c_result_p
 def sg_stats_rowcol_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_striped_profile_16.restype = c_result_p
 def sg_stats_rowcol_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_striped_profile_8.restype = c_result_p
 def sg_stats_rowcol_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sg_stats_rowcol_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sg_stats_rowcol_striped_profile_sat.restype = c_result_p
 def sg_stats_rowcol_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sg_stats_rowcol_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_scan_profile_64.restype = c_result_p
 def sw_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_scan_profile_32.restype = c_result_p
 def sw_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_scan_profile_16.restype = c_result_p
 def sw_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_scan_profile_8.restype = c_result_p
 def sw_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_scan_profile_sat.restype = c_result_p
 def sw_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_striped_profile_64.restype = c_result_p
 def sw_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_striped_profile_32.restype = c_result_p
 def sw_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_striped_profile_16.restype = c_result_p
 def sw_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_striped_profile_8.restype = c_result_p
 def sw_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_striped_profile_sat.restype = c_result_p
 def sw_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_table_scan_profile_64.restype = c_result_p
 def sw_table_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_table_scan_profile_32.restype = c_result_p
 def sw_table_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_table_scan_profile_16.restype = c_result_p
 def sw_table_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_table_scan_profile_8.restype = c_result_p
 def sw_table_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_table_scan_profile_sat.restype = c_result_p
 def sw_table_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_table_striped_profile_64.restype = c_result_p
 def sw_table_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_table_striped_profile_32.restype = c_result_p
 def sw_table_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_table_striped_profile_16.restype = c_result_p
 def sw_table_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_table_striped_profile_8.restype = c_result_p
 def sw_table_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_table_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_table_striped_profile_sat.restype = c_result_p
 def sw_table_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_table_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_rowcol_scan_profile_64.restype = c_result_p
 def sw_rowcol_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_rowcol_scan_profile_32.restype = c_result_p
 def sw_rowcol_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_rowcol_scan_profile_16.restype = c_result_p
 def sw_rowcol_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_rowcol_scan_profile_8.restype = c_result_p
 def sw_rowcol_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_rowcol_scan_profile_sat.restype = c_result_p
 def sw_rowcol_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_rowcol_striped_profile_64.restype = c_result_p
 def sw_rowcol_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_rowcol_striped_profile_32.restype = c_result_p
 def sw_rowcol_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_rowcol_striped_profile_16.restype = c_result_p
 def sw_rowcol_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_rowcol_striped_profile_8.restype = c_result_p
 def sw_rowcol_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_rowcol_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_rowcol_striped_profile_sat.restype = c_result_p
 def sw_rowcol_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_rowcol_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_trace_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_trace_scan_profile_64.restype = c_result_p
 def sw_trace_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_trace_scan_profile_32.restype = c_result_p
 def sw_trace_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_trace_scan_profile_16.restype = c_result_p
 def sw_trace_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_trace_scan_profile_8.restype = c_result_p
 def sw_trace_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_trace_scan_profile_sat.restype = c_result_p
 def sw_trace_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_trace_striped_profile_64.restype = c_result_p
 def sw_trace_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_trace_striped_profile_32.restype = c_result_p
 def sw_trace_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_trace_striped_profile_16.restype = c_result_p
 def sw_trace_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_trace_striped_profile_8.restype = c_result_p
 def sw_trace_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_trace_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_trace_striped_profile_sat.restype = c_result_p
 def sw_trace_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_trace_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2), s1, s2, matrix)
+        len(profile.s1), len(s2), profile.s1, s2, profile.matrix)
 
 _lib.parasail_sw_stats_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_stats_scan_profile_64.restype = c_result_p
 def sw_stats_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_stats_scan_profile_32.restype = c_result_p
 def sw_stats_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_stats_scan_profile_16.restype = c_result_p
 def sw_stats_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_stats_scan_profile_8.restype = c_result_p
 def sw_stats_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_stats_scan_profile_sat.restype = c_result_p
 def sw_stats_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_stats_striped_profile_64.restype = c_result_p
 def sw_stats_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_stats_striped_profile_32.restype = c_result_p
 def sw_stats_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_stats_striped_profile_16.restype = c_result_p
 def sw_stats_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_stats_striped_profile_8.restype = c_result_p
 def sw_stats_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_stats_striped_profile_sat.restype = c_result_p
 def sw_stats_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_stats_table_scan_profile_64.restype = c_result_p
 def sw_stats_table_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_stats_table_scan_profile_32.restype = c_result_p
 def sw_stats_table_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_stats_table_scan_profile_16.restype = c_result_p
 def sw_stats_table_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_stats_table_scan_profile_8.restype = c_result_p
 def sw_stats_table_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_stats_table_scan_profile_sat.restype = c_result_p
 def sw_stats_table_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_stats_table_striped_profile_64.restype = c_result_p
 def sw_stats_table_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_stats_table_striped_profile_32.restype = c_result_p
 def sw_stats_table_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_stats_table_striped_profile_16.restype = c_result_p
 def sw_stats_table_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_stats_table_striped_profile_8.restype = c_result_p
 def sw_stats_table_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_table_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_stats_table_striped_profile_sat.restype = c_result_p
 def sw_stats_table_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_table_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_scan_profile_64.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_scan_profile_64.restype = c_result_p
 def sw_stats_rowcol_scan_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_scan_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_scan_profile_32.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_scan_profile_32.restype = c_result_p
 def sw_stats_rowcol_scan_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_scan_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_scan_profile_16.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_scan_profile_16.restype = c_result_p
 def sw_stats_rowcol_scan_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_scan_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_scan_profile_8.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_scan_profile_8.restype = c_result_p
 def sw_stats_rowcol_scan_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_scan_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_scan_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_scan_profile_sat.restype = c_result_p
 def sw_stats_rowcol_scan_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_scan_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_striped_profile_64.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_striped_profile_64.restype = c_result_p
 def sw_stats_rowcol_striped_profile_64(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_striped_profile_64(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_striped_profile_32.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_striped_profile_32.restype = c_result_p
 def sw_stats_rowcol_striped_profile_32(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_striped_profile_32(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_striped_profile_16.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_striped_profile_16.restype = c_result_p
 def sw_stats_rowcol_striped_profile_16(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_striped_profile_16(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_striped_profile_8.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_striped_profile_8.restype = c_result_p
 def sw_stats_rowcol_striped_profile_8(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_striped_profile_8(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))
 
 _lib.parasail_sw_stats_rowcol_striped_profile_sat.argtypes = _argtypes
 _lib.parasail_sw_stats_rowcol_striped_profile_sat.restype = c_result_p
 def sw_stats_rowcol_striped_profile_sat(profile, s2, open, extend):
     return Result(_lib.parasail_sw_stats_rowcol_striped_profile_sat(
         profile, b(s2), len(s2), open, extend),
-        len(s1), len(s2))
+        len(profile.s1), len(s2))

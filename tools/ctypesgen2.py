@@ -86,9 +86,11 @@ class result_ssw_t(ctypes.Structure):
 	("ref_end1",    ctypes.c_int32),
 	("read_begin1", ctypes.c_int32),
 	("read_end1",   ctypes.c_int32),
-	("cigar",	c_cigar_p),
+	("cigar",	c_uint32_p),
 	("cigarLen",	ctypes.c_int32)
     ]
+
+c_result_ssw_p = ctypes.POINTER(result_ssw_t)
 
 class Cigar:
     def __init__(self, pointer):
@@ -117,6 +119,12 @@ class Cigar:
         as_str = ctypes.string_at(voidp)
         _lib.parasail_free(voidp)
         return as_str
+    @staticmethod
+    def decode_op(cigar_int):
+        return _lib.parasail_cigar_decode_op(cigar_int)
+    @staticmethod
+    def decode_len(cigar_int):
+        return _lib.parasail_cigar_decode_len(cigar_int)
 
 class Result:
     def __init__(self, pointer, len_query, len_ref, query=None, ref=None, matrix=None):
@@ -582,6 +590,9 @@ _lib.parasail_cigar_decode.restype = ctypes.c_void_p
 _lib.parasail_result_get_cigar.argtypes = [c_result_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, c_matrix_p]
 _lib.parasail_result_get_cigar.restype = c_cigar_p
 
+_lib.parasail_cigar_free.argtypes = [c_cigar_p]
+_lib.parasail_cigar_free.restype = None
+
 _lib.parasail_result_is_nw.argtypes = [c_result_p]
 _lib.parasail_result_is_nw.restype = ctypes.c_int
 
@@ -714,12 +725,33 @@ class SSWResult:
     @property
     def cigar(self):
         return _make_nd_array(
-            self.pointer,
+            self.pointer[0].cigar,
             (self.cigarLen,),
 	    numpy.uint32)
     @property
     def cigarLen(self):
         return self.pointer[0].cigarLen
+
+_lib.parasail_ssw.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, c_matrix_p]
+_lib.parasail_ssw.restype = c_result_ssw_p
+
+_lib.parasail_ssw_profile.argtypes = [c_profile_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.parasail_ssw_profile.restype = c_result_ssw_p
+
+_lib.parasail_ssw_init.argtypes = [ctypes.c_char_p, ctypes.c_int, c_matrix_p, ctypes.c_int8]
+_lib.parasail_ssw_init.restype = c_profile_p
+
+_lib.parasail_result_ssw_free.argtype = [c_result_ssw_p]
+_lib.parasail_result_ssw_free.restype = None
+
+def ssw(s1, s2, open, extend, matrix):
+    return SSWResult(_lib.parasail_ssw(b(s1), len(s1), b(s2), len(s2), open, extend, matrix))
+
+def ssw_profile(profile, s2, open, extend):
+    return SSWResult(_lib.parasail_ssw_profile(profile, b(s2), len(s2), open, extend))
+
+def ssw_init(s1, matrix, score_size):
+    return Profile(_lib.parasail_ssw_init(b(s1), len(s1), matrix, score_size), matrix)
 
 # begin generated names here
 
@@ -810,7 +842,7 @@ for a in alg:
                     myprint(" "*4+"return Result(_lib.parasail_"+a+s+t+p+w+"(")
                     myprint(" "*8+"profile, b(s2), len(s2), open, extend),")
                     if 'trace' in t:
-                        myprint(" "*8+"len(s1), len(s2), s1, s2, matrix)")
+                        myprint(" "*8+"len(profile.s1), len(s2), profile.s1, s2, profile.matrix)")
                     else:
-                        myprint(" "*8+"len(s1), len(s2))")
+                        myprint(" "*8+"len(profile.s1), len(s2))")
 
