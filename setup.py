@@ -230,7 +230,7 @@ class bdist_wheel(bdist_wheel_):
                         data = github_api_json(address)
                         if not data or 'assets' not in data:
                             raise RuntimeError("Unable to download github asset JSON from "+address)
-                    except Exception, e:
+                    except Exception as e:
                         print(repr(e))
                         print("Will retry in 5 seconds")
                         time.sleep(5)
@@ -254,7 +254,7 @@ class bdist_wheel(bdist_wheel_):
                 for attempt in range(10):
                     try:
                         name,hdrs = urlretrieve(asset, archive)
-                    except Exception, e:
+                    except Exception as e:
                         print(repr(e))
                         print("Will retry in 5 seconds")
                         time.sleep(5)
