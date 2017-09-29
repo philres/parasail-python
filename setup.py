@@ -7,6 +7,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 try:
     from urllib import urlretrieve
 except ImportError:
@@ -206,24 +207,38 @@ def build_parasail(libname):
     print("copying {} to {}".format(src,dst))
     shutil.copy(src,dst)
 
+def github_api_json(address):
+    if (sys.version_info > (3, 0)):
+        import urllib.request
+        with urllib.request.urlopen(address) as url:
+            data = json.loads(url.read().decode())
+    else:
+        import urllib
+        response = urllib.urlopen(address)
+        data = json.loads(response.read())
+
 class bdist_wheel(bdist_wheel_):
     def run(self):
         libname = get_libname()
         if not os.path.exists(os.path.join("parasail", libname)):
             if platform.system() == "Windows":
-                # download latest release JSON
+                print("Downloading latest parasail release info from github")
                 address = "https://api.github.com/repos/jeffdaily/parasail/releases/latest"
                 data = None
-                if (sys.version_info > (3, 0)):
-                    import urllib.request
-                    with urllib.request.urlopen(address) as url:
-                        data = json.loads(url.read().decode())
+                for attempt in range(10):
+                    try:
+                        data = github_api_json(address)
+                        if not data or 'assets' not in data:
+                            raise RuntimeError("Unable to download github asset JSON from "+address)
+                    except Exception, e:
+                        print(repr(e))
+                        print("Will retry in 5 seconds")
+                        time.sleep(5)
+                    else:
+                        break
                 else:
-                    import urllib
-                    response = urllib.urlopen(address)
-                    data = json.loads(response.read())
-                if not data:
-                    raise RuntimeError("Unable to download github asset JSON")
+                    # we failed all the attempts - deal with the consequences.
+                    raise RuntimeError("All attempts to download github asset JSON have failed")
                 asset = None
                 search = "win32-v140"
                 if is_python_64bit():
@@ -236,7 +251,18 @@ class bdist_wheel(bdist_wheel_):
                     raise RuntimeError("Unable to determine asset URL")
                 print("Downloading latest parasail release {}".format(asset))
                 archive = asset.rsplit('/',1)[-1]
-                name,hdrs = urlretrieve(asset, archive)
+                for attempt in range(10):
+                    try:
+                        name,hdrs = urlretrieve(asset, archive)
+                    except Exception, e:
+                        print(repr(e))
+                        print("Will retry in 5 seconds")
+                        time.sleep(5)
+                    else:
+                        break
+                else:
+                    # we failed all the attempts - deal with the consequences.
+                    raise RuntimeError("All attempts to download asset URL have failed")
                 destdir = archive.rsplit('.',1)[0]
                 print("Unzipping {}".format(archive))
                 unzip(archive, destdir)
