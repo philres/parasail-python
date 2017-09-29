@@ -10,6 +10,9 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+-------------------
+1.1.5_ - 2017-09-29
+-------------------
 - Add travis build.
 - Add CHANGELOG.rst.
 - Add Cigar decode_op() decode_len() @staticmethods
@@ -46,7 +49,8 @@ The Unreleased section will be empty for tagged releases. Unreleased functionali
 -------------------
 First tagged release. The 'master' branch always represents the latest stable code. Tagged releases correspond to pypi releases.
 
-.. _Unreleased: https://github.com/jeffdaily/parasail-python/compare/v1.1.4...master
+.. _Unreleased: https://github.com/jeffdaily/parasail-python/compare/v1.1.5...master
+.. _1.1.5: https://github.com/jeffdaily/parasail-python/compare/v1.1.4...v1.1.5
 .. _1.1.4: https://github.com/jeffdaily/parasail-python/compare/v1.1.3...v1.1.4
 .. _1.1.3: https://github.com/jeffdaily/parasail-python/compare/v1.1.2...v1.1.3
 .. _1.1.2: https://github.com/jeffdaily/parasail-python/compare/v1.1.1...v1.1.2
