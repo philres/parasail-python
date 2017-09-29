@@ -15,7 +15,7 @@ import zipfile
 from distutils.util import get_platform
 from setuptools import setup
 from wheel.bdist_wheel import bdist_wheel as bdist_wheel_
-
+from setuptools.command.install import install as install_
 
 ###############################################################################
 
@@ -174,7 +174,7 @@ def build_parasail(libname):
     else:
         print("parasail archive executable permissions ok")
 
-    if find_file('config.status') is None:
+    if find_file('config.status', root) is None:
         print("configuring parasail in directory {}".format(root))
         # force universal/fat build in OSX via CFLAGS env var
         if platform.system() == "Darwin":
@@ -189,7 +189,7 @@ def build_parasail(libname):
     else:
         print("parasail already configured in directory {}".format(root))
 
-    if find_file(libname) is None:
+    if find_file(libname, root) is None:
         print("making parasail")
         retcode = subprocess.Popen([
             'make',
@@ -218,65 +218,73 @@ def github_api_json(address):
         data = json.loads(response.read())
     return data
 
+def download_windows_dll():
+    print("Downloading latest parasail release info from github")
+    address = "https://api.github.com/repos/jeffdaily/parasail/releases/latest"
+    data = None
+    for attempt in range(10):
+        try:
+            data = github_api_json(address)
+            if not data or 'assets' not in data:
+                raise RuntimeError("Unable to download github asset JSON from "+address)
+        except Exception as e:
+            print(repr(e))
+            print("Will retry in 5 seconds")
+            time.sleep(5)
+        else:
+            break
+    else:
+        # we failed all the attempts - deal with the consequences.
+        raise RuntimeError("All attempts to download github asset JSON have failed")
+    asset = None
+    search = "win32-v140"
+    if is_python_64bit():
+        search = "win64-v140"
+    for maybe_asset in data['assets']:
+        if search in maybe_asset['browser_download_url']:
+            asset = maybe_asset['browser_download_url']
+            break
+    if not asset:
+        raise RuntimeError("Unable to determine asset URL")
+    print("Downloading latest parasail release {}".format(asset))
+    archive = asset.rsplit('/',1)[-1]
+    for attempt in range(10):
+        try:
+            name,hdrs = urlretrieve(asset, archive)
+        except Exception as e:
+            print(repr(e))
+            print("Will retry in 5 seconds")
+            time.sleep(5)
+        else:
+            break
+    else:
+        # we failed all the attempts - deal with the consequences.
+        raise RuntimeError("All attempts to download asset URL have failed")
+    destdir = archive.rsplit('.',1)[0]
+    print("Unzipping {}".format(archive))
+    unzip(archive, destdir)
+    print("Locating {}".format(libname))
+    root = find_file(libname)
+    src = os.path.join(root, libname)
+    dst = 'parasail'
+    print("copying {} to {}".format(src,dst))
+    shutil.copy(src,dst)
+
+def prepare_shared_lib():
+    libname = get_libname()
+    libpath = os.path.join("parasail", libname)
+    if not os.path.exists(libpath):
+        print("{} not found, attempting to build".format(libpath))
+        if platform.system() == "Windows":
+            download_windows_dll()
+        else:
+            build_parasail(libname)
+    if not os.path.exists(libpath):
+        raise RuntimeError("Unable to find shared library {}.".format(libname))
+
 class bdist_wheel(bdist_wheel_):
     def run(self):
-        libname = get_libname()
-        if not os.path.exists(os.path.join("parasail", libname)):
-            if platform.system() == "Windows":
-                print("Downloading latest parasail release info from github")
-                address = "https://api.github.com/repos/jeffdaily/parasail/releases/latest"
-                data = None
-                for attempt in range(10):
-                    try:
-                        data = github_api_json(address)
-                        if not data or 'assets' not in data:
-                            raise RuntimeError("Unable to download github asset JSON from "+address)
-                    except Exception as e:
-                        print(repr(e))
-                        print("Will retry in 5 seconds")
-                        time.sleep(5)
-                    else:
-                        break
-                else:
-                    # we failed all the attempts - deal with the consequences.
-                    raise RuntimeError("All attempts to download github asset JSON have failed")
-                asset = None
-                search = "win32-v140"
-                if is_python_64bit():
-                    search = "win64-v140"
-                for maybe_asset in data['assets']:
-                    if search in maybe_asset['browser_download_url']:
-                        asset = maybe_asset['browser_download_url']
-                        break
-                if not asset:
-                    raise RuntimeError("Unable to determine asset URL")
-                print("Downloading latest parasail release {}".format(asset))
-                archive = asset.rsplit('/',1)[-1]
-                for attempt in range(10):
-                    try:
-                        name,hdrs = urlretrieve(asset, archive)
-                    except Exception as e:
-                        print(repr(e))
-                        print("Will retry in 5 seconds")
-                        time.sleep(5)
-                    else:
-                        break
-                else:
-                    # we failed all the attempts - deal with the consequences.
-                    raise RuntimeError("All attempts to download asset URL have failed")
-                destdir = archive.rsplit('.',1)[0]
-                print("Unzipping {}".format(archive))
-                unzip(archive, destdir)
-                print("Locating {}".format(libname))
-                root = find_file(libname)
-                src = os.path.join(root, libname)
-                dst = 'parasail'
-                print("copying {} to {}".format(src,dst))
-                shutil.copy(src,dst)
-            else:
-                build_parasail(libname)
-        if not os.path.exists(os.path.join("parasail", libname)):
-            raise RuntimeError("Unable to find shared library {lib}.".format(lib=libname))
+        prepare_shared_lib()
         bdist_wheel_.run(self)
 
     def finalize_options(self):
@@ -284,6 +292,12 @@ class bdist_wheel(bdist_wheel_):
         self.universal = True
         self.plat_name_supplied = True
         self.plat_name = get_platform()
+
+class install(install_):
+    def run(self):
+        prepare_shared_lib()
+        install_.run(self)
+
 
 if __name__ == "__main__":
     long_description = ""
@@ -305,7 +319,7 @@ if __name__ == "__main__":
         keywords=KEYWORDS,
         packages=PACKAGES,
         package_data={"parasail": [get_libname()]},
-        cmdclass={'bdist_wheel': bdist_wheel},
+        cmdclass={'bdist_wheel': bdist_wheel, 'install': install},
         zip_safe=False,
         classifiers=CLASSIFIERS,
         install_requires=INSTALL_REQUIRES,

@@ -10,6 +10,11 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+- Change setup.py install command to also download/build shared library.
+  Previously it was only the bdist_wheel command that would do so.
+- Close #10. OSError: libparasail.so: cannot open shared object file:
+  No such file or directory.
+
 -------------------
 1.1.5_ - 2017-09-29
 -------------------
