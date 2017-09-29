@@ -219,6 +219,8 @@ def github_api_json(address):
     return data
 
 def download_windows_dll():
+    libname = get_libname()
+    libpath = os.path.join("parasail", libname)
     print("Downloading latest parasail release info from github")
     address = "https://api.github.com/repos/jeffdaily/parasail/releases/latest"
     data = None
