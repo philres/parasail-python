@@ -11,7 +11,9 @@ exclude parasail/libparasail.dylib
 exclude parasail/parasail.dll
 include setup.cfg
 include setup.py
-include test.py
-include test_matrix.py
+include tests/test_basic.py
+include tests/test_matrix.py
+include tests/test_ssw.py
+include tests/test_tables.py
 include tools/ctypesgen.py
 include tools/ctypesgen2.py
