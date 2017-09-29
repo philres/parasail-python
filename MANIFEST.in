@@ -1,1 +1,17 @@
-include COPYING ctypesgen.py DISCLAIMER README.rst setup.cfg test.py
+include CHANGELOG.rst
+include COPYING
+include DISCLAIMER
+include README.rst
+include appveyor.yml
+include parasail/__init__.py
+include parasail/bindings_v1.py
+include parasail/bindings_v2.py
+exclude parasail/libparasail.so
+exclude parasail/libparasail.dylib
+exclude parasail/parasail.dll
+include setup.cfg
+include setup.py
+include test.py
+include test_matrix.py
+include tools/ctypesgen.py
+include tools/ctypesgen2.py
