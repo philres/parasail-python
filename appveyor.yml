@@ -13,9 +13,13 @@ environment:
     # isn't covered by this document) at the time of writing.
 
     - PYTHON: "C:\\Python27"
+      SDIST: "yes"
     - PYTHON: "C:\\Python33"
+      SDIST: "no"
     - PYTHON: "C:\\Python27-x64"
+      SDIST: "no"
     - PYTHON: "C:\\Python33-x64"
+      SDIST: "no"
 
 install:
   # Prepend newly installed Python to the PATH of this build (this cannot be
@@ -41,8 +45,8 @@ build: off
 after_test:
   # This step builds your wheels.
   - "python setup.py bdist_wheel"
-  # This step builds src dist.
-  - "python setup.py sdist"
+  # This step builds src dist, but only once per commit (see env above).
+  - if "%SDIST%"=="yes" ( "python setup.py sdist" ) else ( echo "Skipping sdist" )
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
