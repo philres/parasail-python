@@ -82,15 +82,44 @@ c_cigar_p = ctypes.POINTER(cigar_t)
 class result_ssw_t(ctypes.Structure):
     _fields_ = [
         ("score1",      ctypes.c_uint16),
-	("ref_begin1",  ctypes.c_int32),
-	("ref_end1",    ctypes.c_int32),
-	("read_begin1", ctypes.c_int32),
-	("read_end1",   ctypes.c_int32),
-	("cigar",	c_uint32_p),
-	("cigarLen",	ctypes.c_int32)
+        ("ref_begin1",  ctypes.c_int32),
+        ("ref_end1",    ctypes.c_int32),
+        ("read_begin1", ctypes.c_int32),
+        ("read_end1",   ctypes.c_int32),
+        ("cigar",       c_uint32_p),
+        ("cigarLen",    ctypes.c_int32)
     ]
 
 c_result_ssw_p = ctypes.POINTER(result_ssw_t)
+
+class pstring_t(ctypes.Structure):
+    _fields_ = [
+        ("l", ctypes.c_size_t),
+        ("s", ctypes.c_char_p)
+    ]
+
+class sequence_t(ctypes.Structure):
+    _fields_ = [
+        ("name",    pstring_t),
+        ("comment", pstring_t),
+        ("seq",     pstring_t),
+        ("qual",    pstring_t)
+    ]
+
+c_sequence_p = ctypes.POINTER(sequence_t)
+
+class sequences_t(ctypes.Structure):
+    _fields_ = [
+        ("seqs",       c_sequence_p),
+        ("l",          ctypes.c_size_t),
+        ("characters", ctypes.c_size_t),
+        ("shortest",   ctypes.c_size_t),
+        ("longest",    ctypes.c_size_t),
+        ("mean",       ctypes.c_float),
+        ("stddev",     ctypes.c_float)
+    ]
+
+c_sequences_p = ctypes.POINTER(sequences_t)
 
 class Cigar:
     def __init__(self, pointer):
@@ -103,7 +132,7 @@ class Cigar:
         return _make_nd_array(
             self.pointer[0].seq,
             (self.pointer[0].len,),
-	    numpy.uint32)
+            numpy.uint32)
     @property
     def len(self):
         return self.pointer[0].len
@@ -132,9 +161,9 @@ class Result:
         self.pointer = pointer
         self.len_query = len_query
         self.len_ref = len_ref
-	self.query = query
-	self.ref = ref
-	self.matrix = matrix
+        self.query = query
+        self.ref = ref
+        self.matrix = matrix
         self._as_parameter_ = pointer
     def __del__(self):
         if _lib:
@@ -732,7 +761,7 @@ class SSWResult:
         return _make_nd_array(
             self.pointer[0].cigar,
             (self.cigarLen,),
-	    numpy.uint32)
+            numpy.uint32)
     @property
     def cigarLen(self):
         return self.pointer[0].cigarLen
@@ -757,6 +786,83 @@ def ssw_profile(profile, s2, open, extend):
 
 def ssw_init(s1, matrix, score_size):
     return Profile(_lib.parasail_ssw_init(b(s1), len(s1), matrix, score_size), matrix)
+
+_lib.parasail_sequences_from_file.argtype = [ctypes.c_char_p]
+_lib.parasail_sequences_from_file.restype = c_sequences_p
+
+class Sequence:
+    def __init__(self, pointer):
+        self.pointer = pointer
+    def __len__(self):
+        return int(self.pointer[0].seq.l)
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            if key < 0:
+                key = key + self.pointer[0].seq.l
+            if key < 0 or key > self.pointer[0].seq.l:
+                raise IndexError('Index out of range')
+            return self.pointer[0].seq.s[key]
+        else:
+            raise TypeError('Index must be int, not {}'.format(type(key).__name__))
+    def __str__(self):
+        return self.pointer[0].seq.s
+    @property
+    def name(self):
+        return self.pointer[0].name.s
+    @property
+    def comment(self):
+        if self.pointer[0].comment.s:
+            return self.pointer[0].comment.s
+        else:
+            return ""
+    @property
+    def seq(self):
+        if self.pointer[0].seq.s:
+            return self.pointer[0].seq.s
+        else:
+            return ""
+    @property
+    def qual(self):
+        if self.pointer[0].qual.s:
+            return self.pointer[0].qual.s
+        else:
+            return ""
+
+class Sequences:
+    def __init__(self, pointer):
+        self.pointer = pointer
+    def __del__(self):
+        if _lib:
+            _lib.parasail_sequences_free(self.pointer)
+    def __len__(self):
+        return int(self.pointer[0].l)
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            if key < 0:
+                key = key + self.pointer[0].l
+            if key < 0 or key > self.pointer[0].l:
+                raise IndexError('Index out of range')
+            return Sequence(ctypes.pointer(self.pointer[0].seqs[key]))
+        else:
+            raise TypeError('Index must be int, not {}'.format(type(key).__name__))
+    @property
+    def characters(self):
+        return int(self.pointer[0].characters)
+    @property
+    def shortest(self):
+        return int(self.pointer[0].shortest)
+    @property
+    def longest(self):
+        return int(self.pointer[0].longest)
+    @property
+    def mean(self):
+        return float(self.pointer[0].mean)
+    @property
+    def stddev(self):
+        return float(self.pointer[0].stddev)
+
+def sequences_from_file(filename):
+    return Sequences(_lib.parasail_sequences_from_file(b(filename)))
 
 # begin generated names here
 
