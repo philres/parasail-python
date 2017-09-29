@@ -87,7 +87,8 @@ class Cigar:
     def __init__(self, pointer):
         self.pointer = pointer
     def __del__(self):
-        _lib.parasail_cigar_free(self.pointer)
+        if _lib:
+            _lib.parasail_cigar_free(self.pointer)
     @property
     def seq(self):
         return _make_nd_array(
@@ -127,7 +128,8 @@ class Result:
 	self.matrix = matrix
         self._as_parameter_ = pointer
     def __del__(self):
-        _lib.parasail_result_free(self.pointer)
+        if _lib:
+            _lib.parasail_result_free(self.pointer)
     @property
     def saturated(self):
         return _lib.parasail_result_is_saturated(self.pointer) != 0
@@ -157,8 +159,9 @@ class Result:
         return self.pointer[0].end_ref
     @property
     def score_table(self):
-        if 0 == _lib.parasail_result_is_stats_table(self.pointer):
-            raise AttributeError("'Result' object has no stats tables")
+        if (0 == _lib.parasail_result_is_table(self.pointer) and
+            0 == _lib.parasail_result_is_stats_table(self.pointer)):
+            raise AttributeError("'Result' object has no score table")
         return _make_nd_array(
             _lib.parasail_result_get_score_table(self.pointer),
             (self.len_query, self.len_ref))
@@ -279,7 +282,7 @@ class Matrix:
         self.pointer = pointer
         self._as_parameter_ = pointer
     def __del__(self):
-        if self.pointer[0].user_matrix:
+        if self.pointer[0].user_matrix and _lib:
             _lib.parasail_matrix_free(self.pointer)
     @property
     def name(self):
@@ -358,7 +361,8 @@ class Profile:
         self.matrix_ = matrix
         self._as_parameter_ = pointer
     def __del__(self):
-        _lib.parasail_profile_free(self.pointer)
+        if _lib:
+            _lib.parasail_profile_free(self.pointer)
     @property
     def s1(self):
         return self.pointer[0].s1
@@ -648,56 +652,57 @@ _lib.parasail_result_get_length.argtypes = [c_result_p]
 _lib.parasail_result_get_length.restype = ctypes.c_int
 
 _lib.parasail_result_get_score_table.argtypes = [c_result_p]
-_lib.parasail_result_get_score_table.restype = ctypes.c_int
+_lib.parasail_result_get_score_table.restype = c_int_p
 
 _lib.parasail_result_get_matches_table.argtypes = [c_result_p]
-_lib.parasail_result_get_matches_table.restype = ctypes.c_int
+_lib.parasail_result_get_matches_table.restype = c_int_p
 
 _lib.parasail_result_get_similar_table.argtypes = [c_result_p]
-_lib.parasail_result_get_similar_table.restype = ctypes.c_int
+_lib.parasail_result_get_similar_table.restype = c_int_p
 
 _lib.parasail_result_get_length_table.argtypes = [c_result_p]
-_lib.parasail_result_get_length_table.restype = ctypes.c_int
+_lib.parasail_result_get_length_table.restype = c_int_p
 
 _lib.parasail_result_get_score_row.argtypes = [c_result_p]
-_lib.parasail_result_get_score_row.restype = ctypes.c_int
+_lib.parasail_result_get_score_row.restype = c_int_p
 
 _lib.parasail_result_get_matches_row.argtypes = [c_result_p]
-_lib.parasail_result_get_matches_row.restype = ctypes.c_int
+_lib.parasail_result_get_matches_row.restype = c_int_p
 
 _lib.parasail_result_get_similar_row.argtypes = [c_result_p]
-_lib.parasail_result_get_similar_row.restype = ctypes.c_int
+_lib.parasail_result_get_similar_row.restype = c_int_p
 
 _lib.parasail_result_get_length_row.argtypes = [c_result_p]
-_lib.parasail_result_get_length_row.restype = ctypes.c_int
+_lib.parasail_result_get_length_row.restype = c_int_p
 
 _lib.parasail_result_get_score_col.argtypes = [c_result_p]
-_lib.parasail_result_get_score_col.restype = ctypes.c_int
+_lib.parasail_result_get_score_col.restype = c_int_p
 
 _lib.parasail_result_get_matches_col.argtypes = [c_result_p]
-_lib.parasail_result_get_matches_col.restype = ctypes.c_int
+_lib.parasail_result_get_matches_col.restype = c_int_p
 
 _lib.parasail_result_get_similar_col.argtypes = [c_result_p]
-_lib.parasail_result_get_similar_col.restype = ctypes.c_int
+_lib.parasail_result_get_similar_col.restype = c_int_p
 
 _lib.parasail_result_get_length_col.argtypes = [c_result_p]
-_lib.parasail_result_get_length_col.restype = ctypes.c_int
+_lib.parasail_result_get_length_col.restype = c_int_p
 
 _lib.parasail_result_get_trace_table.argtypes = [c_result_p]
-_lib.parasail_result_get_trace_table.restype = ctypes.c_int
+_lib.parasail_result_get_trace_table.restype = c_int_p
 
 _lib.parasail_result_get_trace_ins_table.argtypes = [c_result_p]
-_lib.parasail_result_get_trace_ins_table.restype = ctypes.c_int
+_lib.parasail_result_get_trace_ins_table.restype = c_int_p
 
 _lib.parasail_result_get_trace_del_table.argtypes = [c_result_p]
-_lib.parasail_result_get_trace_del_table.restype = ctypes.c_int
+_lib.parasail_result_get_trace_del_table.restype = c_int_p
 
 class SSWResult:
     def __init__(self, pointer):
         self.pointer = pointer
         self._as_parameter_ = pointer
     def __del__(self):
-        _lib.parasail_result_ssw_free(self.pointer)
+        if _lib:
+            _lib.parasail_result_ssw_free(self.pointer)
     @property
     def score1(self):
         return self.pointer[0].score1
