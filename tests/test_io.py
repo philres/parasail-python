@@ -45,6 +45,10 @@ def work(filename):
     print("longest:    {}".format(sequences.longest))
     print("mean:       {}".format(sequences.mean))
     print("stddev:     {}".format(sequences.stddev))
+    result = parasail.sw(str(sequences[0]), str(sequences[1]), 10, 1, parasail.blosum62)
+    print(result.score)
+    result = parasail.sw(sequences[0], sequences[1], 10, 1, parasail.blosum62)
+    print(result.score)
 
 def test1(tmpdir):
     filename = 'input.txt'

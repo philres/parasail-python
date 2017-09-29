@@ -14,8 +14,11 @@ The Unreleased section will be empty for tagged releases. Unreleased functionali
 - Add CHANGELOG.rst.
 - Add Cigar decode_op() decode_len() @staticmethods
 - Add bindings to the ssw emulation functions.
+- Add bindings to parasail_sequences_from_file(filename).
+- Add tests; use with pytest.
 - Fix the integer type for ssw cigar.
 - Fix the profile function return values.
+- Fix the table and rowcol properties.
 
 -------------------
 1.1.4_ - 2017-09-26

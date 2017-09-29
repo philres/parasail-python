@@ -21,13 +21,13 @@ else:
 
 if sys.version_info.major < 3:
     def b(x):
-        return x
+        return str(x)
     def isstr(s):
         return isinstance(s, basestring)
 else:
     import codecs
     def b(x):
-        return codecs.latin_1_encode(x)[0]
+        return codecs.latin_1_encode(str(x))[0]
     def isstr(s):
         return isinstance(s, str)
 

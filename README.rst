@@ -27,6 +27,8 @@ Table of Contents
 -  `Substitution Matrices <#substitution-matrices>`__
 -  `SSW Library Emulation <#ssw-library-emulation>`__
 -  `Banded Global Alignment <#banded-global-alignment>`__
+-  `File Input <#file-input>`__
+-  `Tracebacks <#tracebacks>`__
 -  `Citing parasail <#citing-parasail>`__
 -  `License: Battelle BSD-style <#license-battelle-bsd-style>`__
 
@@ -253,8 +255,22 @@ There is one version of banded global alignment available.  Though it is not vec
     band_size = 3
     result = parasail.nw_banded("asdf", "asdf", 10, 1, band_size, matrix):
 
+File Input
+----------
+
+`back to top <#table-of-contents>`__
+
+Parasail can parse FASTA, FASTQ, and gzipped versions of such files. The
+function ``parasail.sequences_from_file`` will return a list-like object
+containing Sequence instances. A parasail Sequence behaves like an
+immutable string but also has extra attributes ``name``, ``comment``,
+and ``qual``. These attributes will return an empty string if the input
+file did not contain these fields.
+
 Tracebacks
 ----------
+
+`back to top <#table-of-contents>`__
 
 Parasail supports accessing a SAM CIGAR string from a result.  You must use a traceback-capable alignment function.  Refer to the C interface description above for details on how to use a traceback-capable alignment function.
 
