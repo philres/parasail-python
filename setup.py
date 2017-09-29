@@ -49,6 +49,7 @@ INSTALL_REQUIRES = ["numpy"]
 
 ###############################################################################
 
+TIMEOUT = 10
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -231,8 +232,8 @@ def download_windows_dll():
                 raise RuntimeError("Unable to download github asset JSON from "+address)
         except Exception as e:
             print(repr(e))
-            print("Will retry in 5 seconds")
-            time.sleep(5)
+            print("Will retry in {} seconds".format(TIMEOUT))
+            time.sleep(TIMEOUT)
         else:
             break
     else:
@@ -255,8 +256,8 @@ def download_windows_dll():
             name,hdrs = urlretrieve(asset, archive)
         except Exception as e:
             print(repr(e))
-            print("Will retry in 5 seconds")
-            time.sleep(5)
+            print("Will retry in {} seconds".format(TIMEOUT))
+            time.sleep(TIMEOUT)
         else:
             break
     else:

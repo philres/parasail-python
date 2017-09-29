@@ -770,10 +770,18 @@ _lib.parasail_result_ssw_free.argtype = [c_result_ssw_p]
 _lib.parasail_result_ssw_free.restype = None
 
 def ssw(s1, s2, open, extend, matrix):
-    return SSWResult(_lib.parasail_ssw(b(s1), len(s1), b(s2), len(s2), open, extend, matrix))
+    pointer = _lib.parasail_ssw(b(s1), len(s1), b(s2), len(s2), open, extend, matrix)
+    if pointer:
+        return SSWResult(pointer)
+    else:
+        return None
 
 def ssw_profile(profile, s2, open, extend):
-    return SSWResult(_lib.parasail_ssw_profile(profile, b(s2), len(s2), open, extend))
+    pointer = _lib.parasail_ssw_profile(profile, b(s2), len(s2), open, extend)
+    if pointer:
+        return SSWResult(pointer)
+    else:
+        return None
 
 def ssw_init(s1, matrix, score_size):
     return Profile(_lib.parasail_ssw_init(b(s1), len(s1), matrix, score_size), matrix)

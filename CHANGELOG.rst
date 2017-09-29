@@ -10,6 +10,7 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+- Fix seg fault, return None if SSW emulation functions return a NULL pointer.
 - Change setup.py install command to also download/build shared library.
   Previously it was only the bdist_wheel command that would do so.
 - Close #10. OSError: libparasail.so: cannot open shared object file:
