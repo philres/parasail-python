@@ -1,12 +1,10 @@
 import codecs
-import json
 import os
 import platform
 import re
 import shutil
 import stat
 import subprocess
-import sys
 import time
 try:
     from urllib import urlretrieve
@@ -208,6 +206,8 @@ def build_parasail(libname):
     shutil.copy(src,dst)
 
 def github_api_json(address):
+    import json
+    import sys
     if (sys.version_info > (3, 0)):
         import urllib.request
         with urllib.request.urlopen(address) as url:
@@ -216,6 +216,7 @@ def github_api_json(address):
         import urllib
         response = urllib.urlopen(address)
         data = json.loads(response.read())
+    return data
 
 class bdist_wheel(bdist_wheel_):
     def run(self):
