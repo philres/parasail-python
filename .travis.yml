@@ -9,8 +9,13 @@ matrix:
   - os: osx
     osx_image: xcode6.4
 
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rvm get stable || true; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update || true; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install python3 || brew upgrade python3 || true; fi
+
 script:
-- python setup.py bdist_wheel
+- python3 setup.py bdist_wheel
 
 deploy:
   provider: pypi
