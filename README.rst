@@ -260,7 +260,8 @@ File Input
 
 `back to top <#table-of-contents>`__
 
-Parasail can parse FASTA, FASTQ, and gzipped versions of such files. The
+Parasail can parse FASTA, FASTQ, and gzipped versions of such files if
+zlib was found during the C library configure step. The
 function ``parasail.sequences_from_file`` will return a list-like object
 containing Sequence instances. A parasail Sequence behaves like an
 immutable string but also has extra attributes ``name``, ``comment``,

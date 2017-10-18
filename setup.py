@@ -5,6 +5,7 @@ import re
 import shutil
 import stat
 import subprocess
+import tarfile
 import time
 try:
     from urllib import urlretrieve
@@ -16,6 +17,7 @@ from distutils.util import get_platform
 from setuptools import setup
 from wheel.bdist_wheel import bdist_wheel as bdist_wheel_
 from setuptools.command.install import install as install_
+from distutils.command.build import build as build_
 
 ###############################################################################
 
@@ -93,9 +95,18 @@ def get_libname():
     return libname
 
 def unzip(archive, destdir):
-    thefile=zipfile.ZipFile(archive)
-    thefile.extractall(destdir)
-    thefile.close()
+    try:
+        thefile=zipfile.ZipFile(archive)
+        thefile.extractall(destdir)
+        thefile.close()
+    except zipfile.BadZipfile:
+        thefile=tarfile.open(archive)
+        for info in thefile.getmembers():
+            if '..' in info.name or info.name.startswith('/'):
+                raise RuntimeError("tar file is unsafe")
+        print("tar file is safe")
+        thefile.extractall(destdir)
+        thefile.close()
 
 def find_file(filename, start="."):
     for root, dirs, files in os.walk(start, topdown=False):
@@ -148,7 +159,8 @@ def fix_permissions(start):
 
 # Download, unzip, configure, and make parasail C library from github.
 # Attempt to skip steps that may have already completed.
-def build_parasail(libname):
+def build_parasail():
+    libname = get_libname()
     archive = 'parasail-master.zip'
     destdir = 'parasail-master'
 
@@ -219,9 +231,7 @@ def github_api_json(address):
         data = json.loads(response.read())
     return data
 
-def download_windows_dll():
-    libname = get_libname()
-    libpath = os.path.join("parasail", libname)
+def download_release_info():
     print("Downloading latest parasail release info from github")
     address = "https://api.github.com/repos/jeffdaily/parasail/releases/latest"
     data = None
@@ -239,10 +249,14 @@ def download_windows_dll():
     else:
         # we failed all the attempts - deal with the consequences.
         raise RuntimeError("All attempts to download github asset JSON have failed")
+    return data
+
+def download_asset(search):
+    print("Searching for asset {}".format(search))
+    libname = get_libname()
+    libpath = os.path.join("parasail", libname)
+    data = download_release_info();
     asset = None
-    search = "win32-v140"
-    if is_python_64bit():
-        search = "win64-v140"
     for maybe_asset in data['assets']:
         if search in maybe_asset['browser_download_url']:
             asset = maybe_asset['browser_download_url']
@@ -279,9 +293,27 @@ def prepare_shared_lib():
     if not os.path.exists(libpath):
         print("{} not found, attempting to build".format(libpath))
         if platform.system() == "Windows":
-            download_windows_dll()
+            search = "win32-v140"
+            if is_python_64bit():
+                search = "win64-v140"
+            download_asset(search)
+        elif platform.system() == "Darwin":
+            plat = get_platform().split('-')
+            search = "Darwin-{}".format(plat[1])
+            try:
+                download_asset(search)
+            except RuntimeError:
+                build_parasail()
+        elif platform.system() == "Linux":
+            search = "manylinux1_i686"
+            if is_python_64bit():
+                search = "manylinux1_x86_64"
+            try:
+                download_asset(search)
+            except RuntimeError:
+                build_parasail()
         else:
-            build_parasail(libname)
+            raise RuntimeError("Unrecognized platform {}.".format(platform.system()))
     if not os.path.exists(libpath):
         raise RuntimeError("Unable to find shared library {}.".format(libname))
 
@@ -300,6 +332,11 @@ class install(install_):
     def run(self):
         prepare_shared_lib()
         install_.run(self)
+
+class build(build_):
+    def run(self):
+        prepare_shared_lib()
+        build_.run(self)
 
 
 if __name__ == "__main__":
@@ -322,7 +359,7 @@ if __name__ == "__main__":
         keywords=KEYWORDS,
         packages=PACKAGES,
         package_data={"parasail": [get_libname()]},
-        cmdclass={'bdist_wheel': bdist_wheel, 'install': install},
+        cmdclass={'bdist_wheel': bdist_wheel, 'install': install, 'build': build},
         zip_safe=False,
         classifiers=CLASSIFIERS,
         install_requires=INSTALL_REQUIRES,
