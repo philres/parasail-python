@@ -17,6 +17,16 @@ The Unreleased section will be empty for tagged releases. Unreleased functionali
   No such file or directory.
 
 -------------------
+1.1.7_ - 2017-10-18
+-------------------
+- Bump version to create new pypi release with latest 2.0.2 C library.
+
+-------------------
+1.1.6_ - 2017-10-03
+-------------------
+- Fix #10.
+
+-------------------
 1.1.5_ - 2017-09-29
 -------------------
 - Add travis build.
@@ -55,7 +65,9 @@ The Unreleased section will be empty for tagged releases. Unreleased functionali
 -------------------
 First tagged release. The 'master' branch always represents the latest stable code. Tagged releases correspond to pypi releases.
 
-.. _Unreleased: https://github.com/jeffdaily/parasail-python/compare/v1.1.5...master
+.. _Unreleased: https://github.com/jeffdaily/parasail-python/compare/v1.1.7...master
+.. _1.1.7: https://github.com/jeffdaily/parasail-python/compare/v1.1.6...v1.1.7
+.. _1.1.6: https://github.com/jeffdaily/parasail-python/compare/v1.1.5...v1.1.6
 .. _1.1.5: https://github.com/jeffdaily/parasail-python/compare/v1.1.4...v1.1.5
 .. _1.1.4: https://github.com/jeffdaily/parasail-python/compare/v1.1.3...v1.1.4
 .. _1.1.3: https://github.com/jeffdaily/parasail-python/compare/v1.1.2...v1.1.3
