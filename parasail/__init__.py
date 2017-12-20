@@ -48,7 +48,7 @@ major,minor,patch = version()
 
 # now that we know the version, import the correct bindings
 if major == 1:
-    from bindings_v1 import *
+    from parasail.bindings_v1 import *
 else:
-    from bindings_v2 import *
+    from parasail.bindings_v2 import *
 
