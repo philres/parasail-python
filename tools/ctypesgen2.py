@@ -284,7 +284,10 @@ class Result:
     def cigar(self):
         if 0 == _lib.parasail_result_is_trace(self.pointer):
             raise AttributeError("'Result' object has no traceback")
-        return Cigar(_lib.parasail_result_get_cigar(self.pointer, self.query, self.len_query, self.ref, self.len_ref, self.matrix))
+        return Cigar(_lib.parasail_result_get_cigar(self.pointer,
+            b(self.query), self.len_query,
+            b(self.ref), self.len_ref,
+            self.matrix))
 
 class matrix_t(ctypes.Structure):
     _fields_ = [
