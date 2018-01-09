@@ -159,8 +159,7 @@ It has been noted in literature that some performance can be gained by reusing t
     - Required, select solution width. 'sat' will attempt 8-bit solution but if overflow is detected it will then perform the 16-bit operation. Can be faster in some cases, though 16-bit is often sufficient.
     - ``parasail. {nw,sg,sw} _trace {_striped,_scan} _profile {_8,_16,_32,_64,_sat}``
 
-
-This is a sample function signature of one of the profile creation functions.
+Please note that the bit size you select for creating the profile *must* match the bit size of the function you call. The example below uses a 16-bit profile and a 16-bit function.
 
 .. code:: python
 
