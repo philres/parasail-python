@@ -164,7 +164,7 @@ This is a sample function signature of one of the profile creation functions.
 
 .. code:: python
 
-    profile = parasail.profile_create_8("asdf", parasail.blosum62)
+    profile = parasail.profile_create_16("asdf", parasail.blosum62)
     result1 = parasail.sw_trace_striped_profile_16(profile, "asdf", 10, 1)
     result2 = parasail.nw_scan_profile_16(profile, "asdf", 10, 1)
 
