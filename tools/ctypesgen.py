@@ -30,13 +30,17 @@ else:
 
 if sys.version_info.major < 3:
     def b(x):
-        return x
+        return str(x)
+    def s(x):
+        return str(x)
     def isstr(s):
         return isinstance(s, basestring)
 else:
     import codecs
     def b(x):
-        return codecs.latin_1_encode(x)[0]
+        return codecs.latin_1_encode(str(x))[0]
+    def s(x):
+        return codecs.latin_1_decode(x)[0]
     def isstr(s):
         return isinstance(s, str)
 
@@ -205,7 +209,7 @@ class Matrix:
         self.pointer = pointer
         self._as_parameter_ = pointer
     def __del__(self):
-        if self.pointer[0].user_matrix:
+        if self.pointer[0].user_matrix and _lib:
             _lib.parasail_matrix_free(self.pointer)
     @property
     def name(self):
@@ -279,15 +283,17 @@ class profile_t(ctypes.Structure):
 c_profile_p = ctypes.POINTER(profile_t)
 
 class Profile:
-    def __init__(self, pointer, matrix):
+    def __init__(self, pointer, matrix, s1b):
         self.pointer = pointer
         self.matrix_ = matrix
         self._as_parameter_ = pointer
+        self.s1b = s1b
     def __del__(self):
+        if _lib:
         _lib.parasail_profile_free(self.pointer)
     @property
     def s1(self):
-        return self.pointer[0].s1
+        return s(self.pointer[0].s1)
     @property
     def s1Len(self):
         return self.pointer[0].s1Len
@@ -328,34 +334,44 @@ _lib.parasail_profile_create_stats_sat.argtypes = _profile_create_argtypes
 _lib.parasail_profile_create_stats_sat.restype = c_profile_p
 
 def profile_create_8(s1, matrix):
-    return Profile(_lib.parasail_profile_create_8(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_8(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_16(s1, matrix):
-    return Profile(_lib.parasail_profile_create_16(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_16(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_32(s1, matrix):
-    return Profile(_lib.parasail_profile_create_32(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_32(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_64(s1, matrix):
-    return Profile(_lib.parasail_profile_create_64(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_64(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_sat(s1, matrix):
-    return Profile(_lib.parasail_profile_create_sat(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_sat(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_stats_8(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_8(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_stats_8(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_stats_16(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_16(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_stats_16(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_stats_32(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_32(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_stats_32(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_stats_64(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_64(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_stats_64(s1b, len(s1), matrix), matrix, s1b)
 
 def profile_create_stats_sat(s1, matrix):
-    return Profile(_lib.parasail_profile_create_stats_sat(b(s1), len(s1), matrix), matrix)
+    s1b = b(s1)
+    return Profile(_lib.parasail_profile_create_stats_sat(s1b, len(s1), matrix), matrix, s1b)
 
 def can_use_avx2():
     return bool(_lib.parasail_can_use_avx2())
