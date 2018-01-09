@@ -10,7 +10,12 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
-- Fix #13. Avoid relative import statements.
+-------------------
+1.1.8_ - 2018-01-09
+-------------------
+- Fix relative import statements. Fixes #13.
+- Fix Python3 issues with Profile. Fixes #14.
+- Fix Python3 issues with Cigar. Fixes #15, #16.
 
 -------------------
 1.1.7_ - 2017-10-18
@@ -61,7 +66,8 @@ The Unreleased section will be empty for tagged releases. Unreleased functionali
 -------------------
 First tagged release. The 'master' branch always represents the latest stable code. Tagged releases correspond to pypi releases.
 
-.. _Unreleased: https://github.com/jeffdaily/parasail-python/compare/v1.1.7...master
+.. _Unreleased: https://github.com/jeffdaily/parasail-python/compare/v1.1.8...master
+.. _1.1.8: https://github.com/jeffdaily/parasail-python/compare/v1.1.7...v1.1.8
 .. _1.1.7: https://github.com/jeffdaily/parasail-python/compare/v1.1.6...v1.1.7
 .. _1.1.6: https://github.com/jeffdaily/parasail-python/compare/v1.1.5...v1.1.6
 .. _1.1.5: https://github.com/jeffdaily/parasail-python/compare/v1.1.4...v1.1.5
