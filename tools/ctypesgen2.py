@@ -37,12 +37,20 @@ if sys.version_info.major < 3:
         return isinstance(s, basestring)
 else:
     import codecs
-    def b(x):
-        return codecs.latin_1_encode(str(x))[0]
-    def s(x):
-        return codecs.latin_1_decode(x)[0]
     def isstr(s):
         return isinstance(s, str)
+    def isbytes(s):
+        return isinstance(s, (bytes, bytearray))
+    def b(x):
+        if isstr(x):
+            return codecs.latin_1_encode(str(x))[0]
+        else:
+            return x
+    def s(x):
+        if isbytes(x):
+            return codecs.latin_1_decode(x)[0]
+        else:
+            return x
 
 def _make_nd_array(c_pointer, shape, dtype=numpy.intc, order='C', own_data=True):
     arr_size = numpy.prod(shape[:]) * numpy.dtype(dtype).itemsize 
@@ -152,7 +160,7 @@ class Cigar:
         voidp = _lib.parasail_cigar_decode(self.pointer)
         as_str = ctypes.string_at(voidp)
         _lib.parasail_free(voidp)
-        return as_str
+        return s(as_str)
     @staticmethod
     def decode_op(cigar_int):
         return _lib.parasail_cigar_decode_op(cigar_int)
