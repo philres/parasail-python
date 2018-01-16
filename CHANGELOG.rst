@@ -13,6 +13,7 @@ The Unreleased section will be empty for tagged releases. Unreleased functionali
 - Fix compatibility with 2.1.x C parasail release series
   - configure script, if missing,  must be generated using autoreconf -fi
   - download autotools if missing
+- Fix another Python3 issue with Cigar. Fixes #16 again.
 
 -------------------
 1.1.8_ - 2018-01-09
