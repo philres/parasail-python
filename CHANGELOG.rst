@@ -10,6 +10,10 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+- Fix compatibility with 2.1.x C parasail release series
+  - configure script, if missing,  must be generated using autoreconf -fi
+  - download autotools if missing
+
 -------------------
 1.1.8_ - 2018-01-09
 -------------------

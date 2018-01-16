@@ -5,3 +5,5 @@ parasail.egg-info/
 *.so
 *.dylib
 *.dll
+parasail-master*
+autotools/

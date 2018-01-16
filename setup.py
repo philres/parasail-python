@@ -10,6 +10,7 @@ try:
     from urllib import urlretrieve
 except ImportError:
     from urllib.request import urlretrieve
+import tarfile
 import zipfile
 
 from distutils.util import get_platform
@@ -97,6 +98,11 @@ def unzip(archive, destdir):
     thefile.extractall(destdir)
     thefile.close()
 
+def untar(archive):
+    tar = tarfile.open(archive)
+    tar.extractall()
+    tar.close()
+
 def find_file(filename, start="."):
     for root, dirs, files in os.walk(start, topdown=False):
         for name in files:
@@ -146,37 +152,145 @@ def fix_permissions(start):
                 st = os.stat(fullpath)
                 os.chmod(fullpath, st.st_mode | execmode)
 
+def run_autoreconf(root):
+    print("Running autoreconf -fi from {}".format(root))
+    for tool in ['m4', 'autoconf', 'automake', 'libtool', 'autoreconf']:
+        try:
+            output = subprocess.check_output([tool, '--version'])
+            print(output.splitlines()[0])
+        except subprocess.CalledProcessError as e:
+            print(repr(e))
+        except OSError as e:
+            print('{} not found'.format(tool))
+    retcode = -1
+    try:
+        retcode = subprocess.Popen([
+            'autoreconf',
+            '-fi',
+            ], cwd=root).wait()
+    except Exception as e:
+        pass
+    else:
+        print("autoreconf -fi exited with return code {}".format(retcode))
+    return 0 == retcode
+
+def build_autotools():
+    print("Building autotools")
+    save_cwd = os.getcwd()
+    top = os.path.join(os.getcwd(), 'autotools')
+    if not os.path.exists(top):
+        os.mkdir(top)
+    # we know these versions to work
+    tools = [('m4', '1.4.17'),
+            ('autoconf', '2.69'),
+            ('automake', '1.13.4'),
+            ('libtool', '2.4.6')]
+    for tool,version in tools:
+        os.chdir(top)
+        tdir = '{}-{}'.format(tool, version)
+        tarball = '{}.tar.gz'.format(tdir)
+        binary = '{}/bin/{}'.format(top, tool)
+        url = 'http://ftp.gnu.org/gnu/{}/{}'.format(tool, tarball)
+        if os.path.exists(tarball):
+            print("{} already exists! Using existing copy.".format(tarball))
+        else:
+            print("Downloading {}".format(url))
+            for attempt in range(10):
+                try:
+                    name,hdrs = urlretrieve(url, tarball)
+                except Exception as e:
+                    print(repr(e))
+                    print("Will retry in {} seconds".format(TIMEOUT))
+                    time.sleep(TIMEOUT)
+                else:
+                    break
+            else:
+                # we failed all the attempts - deal with the consequences.
+                raise RuntimeError("All attempts to download {} have failed".format(tarball))
+        if os.path.exists(tdir):
+            print("{} already exists! Using existing sources.".format(tdir))
+        else:
+            print("Expanding {}".format(tarball))
+            untar(tarball)
+        if os.path.exists(binary):
+            print("{} already exists! Skipping build.".format(binary))
+        else:
+            os.chdir(os.path.join(top,tdir))
+            print("configuring {}".format(tool))
+            proc = subprocess.Popen([
+                './configure', '--prefix={}'.format(top)
+                ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout,stderr = proc.communicate()
+            if 0 != proc.returncode:
+                print(stdout)
+                raise RuntimeError("configure of {} failed".format(tool))
+            print("making and installing {}".format(tool))
+            proc = subprocess.Popen([
+                'make', '-j', str(cpu_count()), 'install'
+                ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout,stderr = proc.communicate()
+            if 0 != proc.returncode:
+                print(stdout)
+                raise RuntimeError("make of {} failed".format(tool))
+    os.chdir(save_cwd)
+
 # Download, unzip, configure, and make parasail C library from github.
 # Attempt to skip steps that may have already completed.
 def build_parasail(libname):
     archive = 'parasail-master.zip'
-    destdir = 'parasail-master'
+    unzipped_archive = 'parasail-master'
+    destdir = os.getcwd()
 
     if not os.path.exists(archive):
         print("Downloading latest parasail master")
         theurl = 'https://github.com/jeffdaily/parasail/archive/master.zip'
-        name,hdrs = urlretrieve(theurl, archive)
+        for attempt in range(10):
+            try:
+                name,hdrs = urlretrieve(theurl, archive)
+            except Exception as e:
+                print(repr(e))
+                print("Will retry in {} seconds".format(TIMEOUT))
+                time.sleep(TIMEOUT)
+            else:
+                break
+        else:
+            # we failed all the attempts - deal with the consequences.
+            raise RuntimeError("All attempts to download latest parasail master have failed")
     else:
         print("Archive '{}' already downloaded".format(archive))
 
-    if not os.path.exists(destdir):
+    if not os.path.exists(unzipped_archive):
         print("Unzipping parasail master archive")
         unzip(archive, destdir)
     else:
         print("Archive '{}' already unzipped to {}".format(archive,destdir))
 
-    root = find_file('configure')
-    if root is None:
-        raise RuntimeError("Unable to find configure script")
-
-    if not os.access(os.path.join(root,'configure'), os.X_OK):
+    # need to search for a file specific to top-level parasail archive
+    parasail_root = find_file('version.sh')
+    if not os.access(os.path.join(parasail_root,'version.sh'), os.X_OK):
         print("fixing executable bits after unzipping")
-        fix_permissions(root)
+        fix_permissions(parasail_root)
     else:
         print("parasail archive executable permissions ok")
 
-    if find_file('config.status', root) is None:
-        print("configuring parasail in directory {}".format(root))
+    root = find_file('configure', parasail_root)
+    if root is None:
+        print("Unable to find parasail configure script")
+        root = find_file('configure.ac', parasail_root)
+        if not run_autoreconf(root):
+            newpath = os.path.join(os.getcwd(), 'autotools', 'bin')
+            print("Prepending {} to PATH".format(newpath))
+            os.environ['PATH'] = newpath + os.pathsep + os.environ['PATH']
+            print("PATH={}".format(os.environ['PATH']))
+            build_autotools()
+            if not run_autoreconf(root):
+                raise RuntimeError("autoreconf -fi failed")
+    root = find_file('configure', parasail_root)
+    if root is None:
+        raise RuntimeError("Unable to find parasail configure script after autoreconf step")
+
+    if find_file('config.status', parasail_root) is None:
+        print("configuring parasail in directory {}".format(parasail_root))
         # force universal/fat build in OSX via CFLAGS env var
         if platform.system() == "Darwin":
             os.environ['CFLAGS']="-arch x86_64 -arch i386"
@@ -184,24 +298,24 @@ def build_parasail(libname):
             './configure',
             '--enable-shared',
             '--disable-static'
-            ], cwd=root).wait()
+            ], cwd=parasail_root).wait()
         if 0 != retcode:
             raise RuntimeError("configure failed")
     else:
-        print("parasail already configured in directory {}".format(root))
+        print("parasail already configured in directory {}".format(parasail_root))
 
-    if find_file(libname, root) is None:
+    if find_file(libname, parasail_root) is None:
         print("making parasail")
         retcode = subprocess.Popen([
             'make',
             '-j',
             str(cpu_count())
-            ], cwd=root).wait()
+            ], cwd=parasail_root).wait()
         if 0 != retcode:
             raise RuntimeError("make failed")
     else:
         print("parasail library '{}' already made".format(libname))
-    src = os.path.join(root, '.libs', libname)
+    src = os.path.join(parasail_root, '.libs', libname)
     dst = 'parasail'
     print("copying {} to {}".format(src,dst))
     shutil.copy(src,dst)
