@@ -10,6 +10,11 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+--------------------
+1.1.10_ - 2018-01-16
+--------------------
+- Bump version to create new pypi release with latest 2.1 C library.
+
 -------------------
 1.1.9_ - 2018-01-16
 -------------------
