@@ -281,8 +281,8 @@ Parasail supports accessing a SAM CIGAR string from a result.  You must use a tr
     # cigars have seq, len, beg_query, and beg_ref properties
     # the seq property is encoded
     print(cigar.seq)
-    # use decode method to return a decoded cigar string
-    print(cigar.decode())
+    # use decode attribute to return a decoded cigar string
+    print(cigar.decode)
 
 Citing parasail
 ---------------
