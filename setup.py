@@ -25,7 +25,7 @@ PACKAGES = ['parasail']
 META_PATH = os.path.join("parasail", "__init__.py")
 KEYWORDS = ["Smith-Waterman", "Needleman-Wunsch"]
 CLASSIFIERS = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "License :: OSI Approved :: BSD License",
@@ -43,6 +43,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.3",
     "Programming Language :: Python :: 3.4",
     "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
