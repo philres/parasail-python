@@ -155,12 +155,13 @@ def fix_permissions(start):
 
 def run_autoreconf(root):
     print("Running autoreconf -fi from {}".format(root))
-    for tool in ['m4', 'autoconf', 'automake', 'libtool', 'autoreconf']:
+    for tool in ['perl', 'm4', 'autoconf', 'automake', 'libtool', 'autoreconf']:
         try:
-            output = subprocess.check_output([tool, '--version'])
-            print(output.splitlines()[0])
+            output = subprocess.check_output([tool, '--version'],
+                    stderr=subprocess.STDOUT)
+            print(output.strip().splitlines()[0])
         except subprocess.CalledProcessError as e:
-            print(repr(e))
+            print('{} --version failed'.format(tool))
         except OSError as e:
             print('{} not found'.format(tool))
     retcode = -1
@@ -278,6 +279,12 @@ def build_parasail(libname):
     if root is None:
         print("Unable to find parasail configure script")
         root = find_file('configure.ac', parasail_root)
+        # force use of /usr/bin/perl
+        # on OSX, homebrew perl might not support threading and automake
+        # build will fail
+        print('Prepending /usr/bin to PATH')
+        os.environ['PATH'] = '/usr/bin' + os.pathsep + os.environ['PATH']
+        print("PATH={}".format(os.environ['PATH']))
         if not run_autoreconf(root):
             newpath = os.path.join(os.getcwd(), 'autotools', 'bin')
             print("Prepending {} to PATH".format(newpath))
