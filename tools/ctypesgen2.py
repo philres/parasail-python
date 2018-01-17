@@ -177,6 +177,7 @@ class Result:
         self.ref = ref
         self.matrix = matrix
         self._as_parameter_ = pointer
+        self._cigar = None
     def __del__(self):
         if _lib:
             _lib.parasail_result_free(self.pointer)
@@ -296,10 +297,12 @@ class Result:
     def cigar(self):
         if 0 == _lib.parasail_result_is_trace(self.pointer):
             raise AttributeError("'Result' object has no traceback")
-        return Cigar(_lib.parasail_result_get_cigar(self.pointer,
-            b(self.query), self.len_query,
-            b(self.ref), self.len_ref,
-            self.matrix))
+        if self._cigar is None:
+            self._cigar = Cigar(_lib.parasail_result_get_cigar(self.pointer,
+                b(self.query), self.len_query,
+                b(self.ref), self.len_ref,
+                self.matrix))
+        return self._cigar
 
 class matrix_t(ctypes.Structure):
     _fields_ = [

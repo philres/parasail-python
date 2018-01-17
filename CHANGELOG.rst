@@ -10,6 +10,8 @@ Unreleased_
 -----------
 The Unreleased section will be empty for tagged releases. Unreleased functionality appears in the develop branch.
 
+- Fix Cigar lifetime bug. Cigar instance now held by Result to avoid freeing C memory early.
+
 --------------------
 1.1.10_ - 2018-01-16
 --------------------

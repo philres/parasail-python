@@ -91,6 +91,8 @@ Gap open and extension penalties are specified as positive integers.
     result = parasail.sw_scan_16("asdf", "asdf", 11, 1, parasail.blosum62)
     result = parasail.sw_stats_striped_8("asdf", "asdf", 11, 1, parasail.pam100)
 
+Be careful using the attributes of the Result object - especially on Result instances constructed on the fly. For example, calling `parasail.sw_trace("asdf", "asdf", 11, 1, parasail.blosum62).cigar.seq` returns a numpy.ndarray that wraps a pointer to memory that is invalid because the Cigar is deallocated before the `seq` statement. You can avoid this problem by assigning Result instances to variables as in the example above.
+
 Standard Function Naming Convention
 -----------------------------------
 
