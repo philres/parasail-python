@@ -125,6 +125,7 @@ class sequences_t(ctypes.Structure):
 c_sequences_p = ctypes.POINTER(sequences_t)
 
 class Cigar:
+    __BAM_CIGAR_STR = 'MIDNSHP=X8'
     def __init__(self, pointer):
         self.pointer = pointer
     def __del__(self):
@@ -147,11 +148,25 @@ class Cigar:
         return self.pointer[0].beg_ref
     @property
     def decode(self):
-        # this allocates a char array, and we must free it
-        voidp = _lib.parasail_cigar_decode(self.pointer)
-        as_str = ctypes.string_at(voidp)
-        _lib.parasail_free(voidp)
-        return s(as_str)
+        # The C interface allocates unaligned memory but does not provide a
+        # means of deallocating it.  The parasail_free() is for aligned
+        # memory only.  On Windows, this is an error.  On OSX/Linux, free()
+        # is the same for aligned and unaligned.
+        if platform.system() == 'Windows':
+            def _decode(x):
+                l = str(x>>4)
+                try:
+                    c = self.__BAM_CIGAR_STR[x&0xf]
+                except:
+                    c = 'M'
+                return l+c
+            return ''.join([_decode(self.pointer[0].seq[i]) for i in range(self.pointer[0].len)])
+        else:
+            # this allocates a char array, and we must free it
+            voidp = _lib.parasail_cigar_decode(self.pointer)
+            as_str = ctypes.string_at(voidp)
+            _lib.parasail_free(voidp)
+            return as_str
     @staticmethod
     def decode_op(cigar_int):
         return _lib.parasail_cigar_decode_op(cigar_int)
