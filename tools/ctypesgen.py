@@ -290,7 +290,7 @@ class Profile:
         self.s1b = s1b
     def __del__(self):
         if _lib:
-        _lib.parasail_profile_free(self.pointer)
+            _lib.parasail_profile_free(self.pointer)
     @property
     def s1(self):
         return s(self.pointer[0].s1)
