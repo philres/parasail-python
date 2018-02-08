@@ -299,9 +299,6 @@ def build_parasail(libname):
 
     if find_file('config.status', parasail_root) is None:
         print("configuring parasail in directory {}".format(parasail_root))
-        # force universal/fat build in OSX via CFLAGS env var
-        if platform.system() == "Darwin":
-            os.environ['CFLAGS']="-arch x86_64 -arch i386"
         retcode = subprocess.Popen([
             './configure',
             '--enable-shared',
