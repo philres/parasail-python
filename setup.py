@@ -239,13 +239,13 @@ def build_autotools():
 # Download, unzip, configure, and make parasail C library from github.
 # Attempt to skip steps that may have already completed.
 def build_parasail(libname):
-    archive = '2.1.5.zip'
-    unzipped_archive = 'parasail-hotfix-2.1.5'
+    archive = 'aarch64.zip'
+    unzipped_archive = 'parasail-feature-aarch64'
     destdir = os.getcwd()
 
     if not os.path.exists(archive):
         print("Downloading latest parasail master")
-        theurl = 'https://github.com/jeffdaily/parasail/archive/hotfix/2.1.5.zip'
+        theurl = 'https://github.com/jeffdaily/parasail/archive/feature/aarch64.zip'
         for attempt in range(10):
             try:
                 name,hdrs = urlretrieve(theurl, archive)
